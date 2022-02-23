@@ -1,7 +1,7 @@
 package parser
 
 import (
-	"goyacc-sql/lexer"
+	"SQL-On-LevelDB/src/lexer"
 	"regexp"
 	"strconv"
 )
@@ -15,131 +15,130 @@ const (
 	ANGLE_LEFT_TOKEN        = int('<')
 	ANGLE_RIGHT_TOKEN       = int('>')
 	ASTERISK_TOKEN          = int('*')
-	POINT_TOKEN				= int('.')
+	POINT_TOKEN             = int('.')
 )
 
 var keywords = map[string]int{
-	"CREATE":                 CREATE,
-	"create" : 				  CREATE,
-	"DROP":                   DROP,
-	"drop":					  DROP,
-	"use": USE,
-	"USE":USE,
-	"DATABASE":               DATABASE,
-	"database":               DATABASE,
-	"TABLE":                  TABLE,
-	"table": TABLE,
-	"INDEX":                  INDEX,
-	"index":INDEX,
-	"PRIMARY":                PRIMARY,
-	"primary":PRIMARY,
-	"KEY":                    KEY,
-	"key":KEY,
-	"ASC":                    ASC,
-	"asc":ASC,
-	"DESC":                   DESC,
-	"desc":DESC,
-	"IN":                     IN,
-	"in": IN,
-	"NOT":                    NOT,
-	"not":NOT,
-	"AND": AND,
-	"and":AND,
-	"or":OR,
-	"OR": OR,
+	"CREATE":   CREATE,
+	"create":   CREATE,
+	"DROP":     DROP,
+	"drop":     DROP,
+	"use":      USE,
+	"USE":      USE,
+	"DATABASE": DATABASE,
+	"database": DATABASE,
+	"TABLE":    TABLE,
+	"table":    TABLE,
+	"INDEX":    INDEX,
+	"index":    INDEX,
+	"PRIMARY":  PRIMARY,
+	"primary":  PRIMARY,
+	"KEY":      KEY,
+	"key":      KEY,
+	"ASC":      ASC,
+	"asc":      ASC,
+	"DESC":     DESC,
+	"desc":     DESC,
+	"IN":       IN,
+	"in":       IN,
+	"NOT":      NOT,
+	"not":      NOT,
+	"AND":      AND,
+	"and":      AND,
+	"or":       OR,
+	"OR":       OR,
 
-	"STORING":STORING,
-	"storing":STORING,
-	"INTERLEAVE":INTERLEAVE,
-	"interleave":INTERLEAVE,
-	"NULL":                   NULL,
-	"null":                   NULL,
+	"STORING":    STORING,
+	"storing":    STORING,
+	"INTERLEAVE": INTERLEAVE,
+	"interleave": INTERLEAVE,
+	"NULL":       NULL,
+	"null":       NULL,
 
-	"ON":                     ON,
-	"on":ON,
+	"ON": ON,
+	"on": ON,
 
 	"CASCADE":                CASCADE,
-	"cascade":CASCADE,
+	"cascade":                CASCADE,
 	"NO":                     NO,
-	"no":NO,
+	"no":                     NO,
 	"ACTION":                 ACTION,
 	"MAX":                    MAX,
-	"max":MAX,
+	"max":                    MAX,
 	"UNIQUE":                 UNIQUE,
-	"unique":UNIQUE,
+	"unique":                 UNIQUE,
 	"ADD":                    ADD,
-	"add":ADD,
+	"add":                    ADD,
 	"COLUMN":                 COLUMN,
-	"column":COLUMN,
+	"column":                 COLUMN,
 	"SET":                    SET,
-	"set":SET,
-	"TRUE": TRUE,
+	"set":                    SET,
+	"TRUE":                   TRUE,
 	"true":                   TRUE,
-	"FALSE":FALSE,
-	"false":FALSE,
+	"FALSE":                  FALSE,
+	"false":                  FALSE,
 	"allow_commit_timestamp": allow_commit_timestamp,
 	"BOOL":                   BOOL,
-	"bool":BOOL,
+	"bool":                   BOOL,
 	"INT64":                  INT64,
-	"INT":INT64,
-	"int":INT64,
+	"INT":                    INT64,
+	"int":                    INT64,
 	"FLOAT64":                FLOAT64,
-	"float64":FLOAT64,
-	"FLOAT":FLOAT64,
-	"float":FLOAT64,
+	"float64":                FLOAT64,
+	"FLOAT":                  FLOAT64,
+	"float":                  FLOAT64,
 
-	"BYTES":                  BYTES,
-	"bytes":BYTES,
-	"char":BYTES,
-	"CHAR":BYTES,
-	"DATE":                   DATE,
-	"date":DATE,
-	"TIMESTAMP":              TIMESTAMP,
-	"timestamp":TIMESTAMP,
-	"database_id":            database_id,
-	"decimal_value":          decimal_value,
-	"hex_value":              hex_value,
-	"table_name":             table_name,
-	"column_name":            column_name,
-	"index_name":             index_name,
-	"insert":INSERT,
-	"INSERT":INSERT,
-	"INTO":INTO,
-	"into":INTO,
-	"UPDATE":UPDATE,
-	"update":UPDATE,
-	"DELETE":DELETE,
-	"delete":DELETE,
-	"SELECT":SELECT,
-	"select":SELECT,
-	"WHERE":WHERE,
-	"where":WHERE,
-	"VALUES":VALUES,
-	"values":VALUES,
-	"FROM":FROM,
-	"from":FROM,
-	"LIMIT":LIMIT,
-	"limit":LIMIT,
-	"OFFSET":OFFSET,
-	"offset":OFFSET,
-	"execfile":EXECFILE,
-	"EXECFILE":EXECFILE,
-
+	"BYTES":         BYTES,
+	"bytes":         BYTES,
+	"char":          BYTES,
+	"CHAR":          BYTES,
+	"DATE":          DATE,
+	"date":          DATE,
+	"TIMESTAMP":     TIMESTAMP,
+	"timestamp":     TIMESTAMP,
+	"database_id":   database_id,
+	"decimal_value": decimal_value,
+	"hex_value":     hex_value,
+	"table_name":    table_name,
+	"column_name":   column_name,
+	"index_name":    index_name,
+	"insert":        INSERT,
+	"INSERT":        INSERT,
+	"INTO":          INTO,
+	"into":          INTO,
+	"UPDATE":        UPDATE,
+	"update":        UPDATE,
+	"DELETE":        DELETE,
+	"delete":        DELETE,
+	"SELECT":        SELECT,
+	"select":        SELECT,
+	"WHERE":         WHERE,
+	"where":         WHERE,
+	"VALUES":        VALUES,
+	"values":        VALUES,
+	"FROM":          FROM,
+	"from":          FROM,
+	"LIMIT":         LIMIT,
+	"limit":         LIMIT,
+	"OFFSET":        OFFSET,
+	"offset":        OFFSET,
+	"execfile":      EXECFILE,
+	"EXECFILE":      EXECFILE,
 }
 
 var symbols = map[string]int{
-	"(": LEFT_PARENTHESIS_TOKEN,
-	")": RIGHT_PARENTHESIS_TOKEN,
-	",": COMMA_TOKEN,
-	";": SEMICOLON_TOKEN,
-	"=": EQUAL_TOKEN,
-	"<": ANGLE_LEFT_TOKEN,
-	">": ANGLE_RIGHT_TOKEN,
-	"*": ASTERISK_TOKEN,
-	"<>":NE,
-	"<=":LE,
-	">=":GE,
-	".":POINT_TOKEN,
+	"(":  LEFT_PARENTHESIS_TOKEN,
+	")":  RIGHT_PARENTHESIS_TOKEN,
+	",":  COMMA_TOKEN,
+	";":  SEMICOLON_TOKEN,
+	"=":  EQUAL_TOKEN,
+	"<":  ANGLE_LEFT_TOKEN,
+	">":  ANGLE_RIGHT_TOKEN,
+	"*":  ASTERISK_TOKEN,
+	"<>": NE,
+	"<=": LE,
+	">=": GE,
+	".":  POINT_TOKEN,
 }
 
 var (
@@ -151,7 +150,7 @@ type keywordTokenizer struct{}
 
 // FromStrLit tokenize lit to a token pre-defined by goyacc with last token as a hint.
 // TODO Check some literals satisfy regexp specs.
-func (kt *keywordTokenizer) FromStrLit(lit string,TokenType lexer.Token, lastToken int) int {
+func (kt *keywordTokenizer) FromStrLit(lit string, TokenType lexer.Token, lastToken int) int {
 	tokVal := 0
 	switch TokenType {
 	case lexer.IDENT:
@@ -163,7 +162,7 @@ func (kt *keywordTokenizer) FromStrLit(lit string,TokenType lexer.Token, lastTok
 				if databaseIdRegexp.MatchString(lit) {
 					tokVal = database_id
 				}
-			case TABLE,INTO,UPDATE,ON:
+			case TABLE, INTO, UPDATE, ON:
 				if nameAttrRegexp.MatchString(lit) {
 					tokVal = table_name
 				}
@@ -172,11 +171,11 @@ func (kt *keywordTokenizer) FromStrLit(lit string,TokenType lexer.Token, lastTok
 					tokVal = index_name
 				}
 			}
-			if tokVal==0 {
-				if nameAttrRegexp.MatchString(lit){
-					tokVal=IDENT_LEGAL
+			if tokVal == 0 {
+				if nameAttrRegexp.MatchString(lit) {
+					tokVal = IDENT_LEGAL
 				} else {
-					tokVal= IDENT
+					tokVal = IDENT
 				}
 			}
 		}
@@ -195,7 +194,7 @@ func (kt *keywordTokenizer) FromStrLit(lit string,TokenType lexer.Token, lastTok
 			tokVal = float_value
 		}
 	case lexer.STRING:
-		tokVal= string_value
+		tokVal = string_value
 	default:
 		if v, ok := symbols[lit]; ok {
 			tokVal = v

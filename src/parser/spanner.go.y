@@ -3,8 +3,8 @@ package parser
 
 import (
     "strconv"
- Value	"goyacc-sql/value"
-	"goyacc-sql/types"
+ Value	"SQL-On-LevelDB/src/value"
+	"SQL-On-LevelDB/src/types"
 )
 %}
 

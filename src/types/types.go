@@ -1,8 +1,8 @@
 package types
 
 import (
+	"SQL-On-LevelDB/src/value"
 	"fmt"
-	"goyacc-sql/value"
 )
 
 // NOTE aliases to refer from parser.

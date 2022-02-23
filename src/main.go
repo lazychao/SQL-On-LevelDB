@@ -1,15 +1,15 @@
 package main
 
 import (
+	"SQL-On-LevelDB/src/parser"
+	"SQL-On-LevelDB/src/types"
 	"bufio"
 	"fmt"
-	"goyacc-sql/parser"
-	"goyacc-sql/types"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
-
+	"SQL-On-LevelDB/src/executor"
 	"github.com/peterh/liner"
 )
 
@@ -66,18 +66,19 @@ func loadHistoryCommand() (*os.File, error) {
 	ExecFile
 )
 */
-func HandleOneParse(input chan types.DStatements, output chan error) {
-	for item := range input {
-		//for range 会一直等待 直到通道被关闭
-		fmt.Println(item.GetOperationType())
-		//DO something you want
-		if item.GetOperationType() == 10 {
-			item.Show()
-		}
-		output <- nil // put the error return
-	}
-	close(output)
-}
+// func HandleOneParse(input chan types.DStatements, output chan error) {
+// 	for item := range input {
+// 		//for range 会一直等待 直到通道被关闭
+// 		fmt.Println(item.GetOperationType())
+// 		//DO something you want
+// 		// if item.GetOperationType() == 10 {
+// 		// 	item.Show()
+// 		// }
+
+// 		output <- nil // put the error return
+// 	}
+// 	close(output)
+// }
 
 func runShell(r chan<- error) {
 	ll := liner.NewLiner()
@@ -101,9 +102,9 @@ func runShell(r chan<- error) {
 		ll.AppendHistory(s.Text())
 	}
 
-	StatementChannel := make(chan types.DStatements, 500) //用于传输操作指令通道
-	FinishChannel := make(chan error, 500)                //用于api执行完成反馈通道
-	go HandleOneParse(StatementChannel, FinishChannel)    //begin the runtime for exec
+	StatementChannel := make(chan types.DStatements, 500)   //用于传输操作指令通道
+	FinishChannel := make(chan error, 500)                  //用于api执行完成反馈通道
+	go executor.Execute(StatementChannel, FinishChannel) //begin the runtime for exec
 	var beginSQLParse = false
 	var sqlText = make([]byte, 0, 100)
 	for { //each sql

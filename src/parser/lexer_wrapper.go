@@ -1,8 +1,8 @@
 package parser
 
 import (
-	"goyacc-sql/lexer"
-	"goyacc-sql/types"
+	"SQL-On-LevelDB/src/lexer"
+	"SQL-On-LevelDB/src/types"
 	"log"
 )
 
@@ -21,8 +21,8 @@ func newLexerWrapper(li *lexer.LexerImpl, channel chan<- types.DStatements) *lex
 }
 
 // yySymType 是.y文件自动生成的  就是union ,,yySymType是一个结构体 有各种终结符和非终结符
-func (l *lexerWrapper) Lex(lval *yySymType) int {//和词法分析器的Lex不一样,,,参数是一个指针
-	r, err := l.impl.Lex(lval.LastToken)//执行的是词法分析器的Lex，读取一个终结符
+func (l *lexerWrapper) Lex(lval *yySymType) int { //和词法分析器的Lex不一样,,,参数是一个指针
+	r, err := l.impl.Lex(lval.LastToken) //执行的是词法分析器的Lex，读取一个终结符
 	if err != nil {
 		log.Fatal(err)
 	}

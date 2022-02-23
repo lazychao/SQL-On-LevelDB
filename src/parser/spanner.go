@@ -4,15 +4,14 @@
 
 package parser
 
-import __yyfmt__ "fmt"
-
-//line parser/spanner.go.y:3
-
 import (
-	"goyacc-sql/types"
-	Value "goyacc-sql/value"
+	"SQL-On-LevelDB/src/types"
+	Value "SQL-On-LevelDB/src/value"
+	__yyfmt__ "fmt"
 	"strconv"
 )
+
+//line parser/spanner.go.y:3
 
 //line parser/spanner.go.y:11
 type yySymType struct {
