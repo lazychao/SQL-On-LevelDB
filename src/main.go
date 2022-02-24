@@ -1,6 +1,8 @@
 package main
 
 import (
+	"SQL-On-LevelDB/src/db"
+	"SQL-On-LevelDB/src/executor"
 	"SQL-On-LevelDB/src/parser"
 	"SQL-On-LevelDB/src/types"
 	"bufio"
@@ -9,7 +11,7 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
-	"SQL-On-LevelDB/src/executor"
+
 	"github.com/peterh/liner"
 )
 
@@ -102,9 +104,11 @@ func runShell(r chan<- error) {
 		ll.AppendHistory(s.Text())
 	}
 
-	StatementChannel := make(chan types.DStatements, 500)   //用于传输操作指令通道
-	FinishChannel := make(chan error, 500)                  //用于api执行完成反馈通道
-	go executor.Execute(StatementChannel, FinishChannel) //begin the runtime for exec
+	StatementChannel := make(chan types.DStatements, 500)                  //用于传输操作指令通道
+	FinishChannel := make(chan error, 500)                                 //用于api执行完成反馈通道
+	OperationChannel := make(chan db.DbOperation, 500)                     //用于传输数据库操作
+	go executor.Execute(StatementChannel, FinishChannel, OperationChannel) //begin the runtime for exec
+	go db.RunDb(OperationChannel)
 	var beginSQLParse = false
 	var sqlText = make([]byte, 0, 100)
 	for { //each sql
@@ -129,11 +133,10 @@ func runShell(r chan<- error) {
 				ll.AppendHistory(input)
 				//检测是否是要退出
 				if !beginSQLParse && (trimInput == "exit" || strings.HasPrefix(trimInput, "exit;")) {
-					close(StatementChannel)
-					for _ = range FinishChannel {
-
-					}
 					//main函数退出
+					close(StatementChannel)
+					close(FinishChannel)
+					close(OperationChannel)
 					r <- err
 					return
 				}
@@ -159,6 +162,7 @@ func runShell(r chan<- error) {
 		durationTime := time.Since(beginTime)
 		fmt.Println("Finish operation at: ", durationTime)
 	}
+
 }
 func main() {
 	//errChan 用于接收shell返回的err
