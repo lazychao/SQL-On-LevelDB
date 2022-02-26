@@ -1,7 +1,7 @@
 package types
 
 import (
-	"SQL-On-LevelDB/src/value"
+	"SQL-On-LevelDB/src/interpreter/value"
 	"fmt"
 )
 

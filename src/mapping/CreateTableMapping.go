@@ -2,10 +2,19 @@ package mapping
 
 import (
 	"SQL-On-LevelDB/src/db"
-	"SQL-On-LevelDB/src/types"
+	"SQL-On-LevelDB/src/interpreter/types"
+	"fmt"
 )
 
-var dbChannel chan<- db.DbOperation
+var operationChannel chan<- db.DbOperation
+var resultChannel <-chan db.DbResultBatch
+var finishChannel chan<- error
+
+//var result db.DbResultBatch
+
+func SetFinishChannel(channel chan<- error) {
+	finishChannel = channel
+}
 
 /*
 type CreateTableStatement struct {
@@ -40,8 +49,9 @@ const (
 	Timestamp
 )
 */
-func SetDbChannel(channel chan<- db.DbOperation) {
-	dbChannel = channel
+func SetDbChannel(channel1 chan<- db.DbOperation, channel2 <-chan db.DbResultBatch) {
+	operationChannel = channel1
+	resultChannel = channel2
 }
 
 func CreateTable(statement types.CreateTableStatement) error {
@@ -56,6 +66,10 @@ func CreateTable(statement types.CreateTableStatement) error {
 	// data, _ := db.Get([]byte(m_key), nil) //data是字节切片
 	//fmt.Println(string(data))
 	operation := db.DbOperation{DbOperationType: db.Put, Key: m_key, Value: m_value}
-	dbChannel <- operation
+	operationChannel <- operation
+	result := <-resultChannel
+	fmt.Println(string(result.Result[0]))
+	finishChannel <- result.Err
+
 	return nil
 }

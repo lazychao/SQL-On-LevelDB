@@ -1,6 +1,6 @@
 package Error
 
-import "SQL-On-LevelDB/src/value"
+import "SQL-On-LevelDB/src/interpreter/value"
 
 type Error struct {
 	Status    bool        //返回状态

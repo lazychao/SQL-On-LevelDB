@@ -3,8 +3,8 @@ package parser
 
 import (
     "strconv"
- Value	"SQL-On-LevelDB/src/value"
-	"SQL-On-LevelDB/src/types"
+ Value	"SQL-On-LevelDB/src/interpreter/value"
+	"SQL-On-LevelDB/src/interpreter/types"
 )
 %}
 

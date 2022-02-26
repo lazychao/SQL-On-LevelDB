@@ -5,15 +5,13 @@
 package parser
 
 import (
-	"SQL-On-LevelDB/src/types"
-	Value "SQL-On-LevelDB/src/value"
+	"SQL-On-LevelDB/src/interpreter/types"
+	Value "SQL-On-LevelDB/src/interpreter/value"
 	__yyfmt__ "fmt"
-	"strconv"
+	"strconv" //line parser/spanner.go.y:3
+	//line parser/spanner.go.y:11
 )
 
-//line parser/spanner.go.y:3
-
-//line parser/spanner.go.y:11
 type yySymType struct {
 	yys           int
 	empty         struct{}

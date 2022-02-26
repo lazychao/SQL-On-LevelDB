@@ -6,8 +6,6 @@ import (
 	"github.com/syndtr/goleveldb/leveldb"
 )
 
-var finishChannel chan<- error
-
 type DbOperationTag = int
 
 const (
@@ -16,28 +14,36 @@ const (
 	Delete
 )
 
+type DbResult []byte
+type DbResultBatch struct {
+	//二维字节数组
+	Result []DbResult
+	//结果数量
+	Cnt int
+	Err error
+}
 type DbOperation struct {
 	DbOperationType DbOperationTag
 	Key             string
 	Value           string
 }
 
-func SetFinishChannel(channel chan<- error) {
-	finishChannel = channel
-}
-func RunDb(operationChannel <-chan DbOperation) {
+func RunDb(operationChannel <-chan DbOperation, resultChannel chan<- DbResultBatch) {
 	db, _ := leveldb.OpenFile("data/testdb", nil) //打开一个数据库,不存在就自动创建
 	//这是相对路径
 	defer db.Close()
 
 	for operation := range operationChannel {
-
+		var result DbResultBatch
 		switch operation.DbOperationType {
 		case Put:
 			db.Put([]byte(operation.Key), []byte(operation.Value), nil)
 			data, err := db.Get([]byte(operation.Key), nil) //data是字节切片
+			result.Result = append(result.Result, DbResult(data))
 			fmt.Println(string(data))
-			finishChannel <- err
+			result.Cnt = 1
+			result.Err = err
+			resultChannel <- result
 		}
 
 	}

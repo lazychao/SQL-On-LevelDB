@@ -77,3 +77,104 @@
 20:56:06.864724 db@janitor F·5 G·0
 20:56:06.864770 db@open done T·17.051581ms
 20:57:13.657735 db@close closing
+=============== Feb 26, 2022 (CST) ===============
+15:40:46.602117 log@legend F·NumFile S·FileSize N·Entry C·BadEntry B·BadBlock Ke·KeyError D·DroppedEntry L·Level Q·SeqNum T·TimeElapsed
+15:40:46.613053 version@stat F·[2 1] S·402B[270B 132B] Sc·[0.50 0.00]
+15:40:46.613081 db@open opening
+15:40:46.613122 journal@recovery F·1
+15:40:46.614236 journal@recovery recovering @18
+15:40:46.617899 memdb@flush created L0@20 N·2 S·146B "m_people,v14":"m_people,v13"
+15:40:46.618357 version@stat F·[3 1] S·548B[416B 132B] Sc·[0.75 0.00]
+15:40:46.622482 db@janitor F·6 G·0
+15:40:46.622520 db@open done T·9.426034ms
+15:40:46.623304 db@close closing
+15:40:46.623370 db@close done T·64.814µs
+=============== Feb 26, 2022 (CST) ===============
+15:43:31.798980 log@legend F·NumFile S·FileSize N·Entry C·BadEntry B·BadBlock Ke·KeyError D·DroppedEntry L·Level Q·SeqNum T·TimeElapsed
+15:43:31.799098 version@stat F·[3 1] S·548B[416B 132B] Sc·[0.75 0.00]
+15:43:31.799118 db@open opening
+15:43:31.799143 journal@recovery F·1
+15:43:31.799990 journal@recovery recovering @21
+15:43:31.802704 memdb@flush created L0@23 N·4 S·156B "people1,v16":"people3,v18"
+15:43:31.802911 version@stat F·[4 1] S·704B[572B 132B] Sc·[1.00 0.00]
+15:43:31.807123 db@janitor F·7 G·0
+15:43:31.807171 db@open done T·8.034372ms
+15:43:31.807275 table@move L0@23 -> L1
+15:43:31.807309 db@close closing
+15:43:31.807315 table-move@commit exiting
+15:43:31.807374 db@close done T·63.858µs
+=============== Feb 26, 2022 (CST) ===============
+15:43:43.600906 log@legend F·NumFile S·FileSize N·Entry C·BadEntry B·BadBlock Ke·KeyError D·DroppedEntry L·Level Q·SeqNum T·TimeElapsed
+15:43:43.601033 version@stat F·[4 1] S·704B[572B 132B] Sc·[1.00 0.00]
+15:43:43.601052 db@open opening
+15:43:43.601079 journal@recovery F·1
+15:43:43.601680 journal@recovery recovering @24
+15:43:43.614380 memdb@flush created L0@26 N·4 S·157B "peop,v21":"people4,v24"
+15:43:43.614938 version@stat F·[5 1] S·861B[729B 132B] Sc·[1.25 0.00]
+15:43:43.619319 db@janitor F·8 G·0
+15:43:43.619349 db@open done T·18.29153ms
+15:43:43.619401 table@compaction L0·2 -> L1·0 S·313B Q·29
+15:43:43.619533 db@close closing
+15:43:43.621066 table@build created L1@29 N·5 S·166B "peop,v21":"people4,v24"
+15:43:43.621076 table@build exiting
+15:43:43.621080 table@build revert @29
+15:43:43.621163 db@close done T·1.628951ms
+=============== Feb 26, 2022 (CST) ===============
+20:56:00.121019 log@legend F·NumFile S·FileSize N·Entry C·BadEntry B·BadBlock Ke·KeyError D·DroppedEntry L·Level Q·SeqNum T·TimeElapsed
+20:56:00.121211 version@stat F·[5 1] S·861B[729B 132B] Sc·[1.25 0.00]
+20:56:00.121231 db@open opening
+20:56:00.121259 journal@recovery F·1
+20:56:00.122162 journal@recovery recovering @27
+20:56:00.124891 memdb@flush created L0@29 N·4 S·157B "peop,v26":"people4,v29"
+20:56:00.125210 version@stat F·[6 1] S·1018B[886B 132B] Sc·[1.50 0.00]
+20:56:00.129527 db@janitor F·9 G·0
+20:56:00.129607 db@open done T·8.334791ms
+20:56:00.129621 table@compaction L0·3 -> L1·0 S·470B Q·30
+20:56:00.131187 table@build created L1@32 N·5 S·166B "peop,v26":"people4,v29"
+20:56:00.131231 version@stat F·[3 2] S·714B[416B 298B] Sc·[0.75 0.00]
+20:56:00.132425 table@compaction committed F-2 S-304B Ke·0 D·7 T·2.764983ms
+20:56:00.132467 table@remove removed @29
+20:56:00.132508 table@remove removed @26
+20:56:00.132544 table@remove removed @23
+21:00:22.466699 db@close closing
+=============== Feb 26, 2022 (CST) ===============
+21:00:42.842670 log@legend F·NumFile S·FileSize N·Entry C·BadEntry B·BadBlock Ke·KeyError D·DroppedEntry L·Level Q·SeqNum T·TimeElapsed
+21:00:42.842819 version@stat F·[3 2] S·714B[416B 298B] Sc·[0.75 0.00]
+21:00:42.842840 db@open opening
+21:00:42.842867 journal@recovery F·1
+21:00:42.843616 journal@recovery recovering @30
+21:00:42.856937 memdb@flush created L0@33 N·3 S·163B "m_people,v31":"m_poo,v33"
+21:00:42.857682 version@stat F·[4 2] S·877B[579B 298B] Sc·[1.00 0.00]
+21:00:42.864339 db@janitor F·8 G·0
+21:00:42.864391 db@open done T·21.534071ms
+21:00:42.864455 table@compaction L0·3 -> L1·1 S·590B Q·34
+21:00:42.867439 table@build created L1@36 N·3 S·163B "m_people,v31":"m_poo,v33"
+21:00:42.867567 version@stat F·[1 2] S·450B[121B 329B] Sc·[0.25 0.00]
+21:00:42.869290 table@compaction committed F-3 S-427B Ke·0 D·5 T·4.780032ms
+21:00:42.869367 table@remove removed @33
+21:00:42.869483 table@remove removed @20
+21:00:42.869517 table@remove removed @15
+21:00:42.869539 table@remove removed @14
+21:04:11.942353 db@close closing
+=============== Feb 26, 2022 (CST) ===============
+21:04:15.999155 log@legend F·NumFile S·FileSize N·Entry C·BadEntry B·BadBlock Ke·KeyError D·DroppedEntry L·Level Q·SeqNum T·TimeElapsed
+21:04:15.999326 version@stat F·[1 2] S·450B[121B 329B] Sc·[0.25 0.00]
+21:04:15.999350 db@open opening
+21:04:15.999379 journal@recovery F·1
+21:04:16.000154 journal@recovery recovering @34
+21:04:16.002637 memdb@flush created L0@37 N·3 S·162B "m_people,v35":"m_pp,v36"
+21:04:16.002826 version@stat F·[2 2] S·612B[283B 329B] Sc·[0.50 0.00]
+21:04:16.007221 db@janitor F·6 G·0
+21:04:16.007261 db@open done T·7.896783ms
+21:08:20.760394 db@close closing
+=============== Feb 26, 2022 (CST) ===============
+21:08:27.329947 log@legend F·NumFile S·FileSize N·Entry C·BadEntry B·BadBlock Ke·KeyError D·DroppedEntry L·Level Q·SeqNum T·TimeElapsed
+21:08:27.330089 version@stat F·[2 2] S·612B[283B 329B] Sc·[0.50 0.00]
+21:08:27.330112 db@open opening
+21:08:27.330137 journal@recovery F·1
+21:08:27.330910 journal@recovery recovering @38
+21:08:27.343189 memdb@flush created L0@40 N·2 S·150B "m_pers1,v40":"m_p..on1,v39"
+21:08:27.343611 version@stat F·[3 2] S·762B[433B 329B] Sc·[0.75 0.00]
+21:08:27.347815 db@janitor F·7 G·0
+21:08:27.347854 db@open done T·17.72983ms
+21:09:23.758018 db@close closing

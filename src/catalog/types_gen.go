@@ -617,90 +617,6 @@ func (z *IndexCatalog) DecodeMsg(dc *msgp.Reader) (err error) {
 					}
 				}
 			}
-		case "StoringClause":
-			var zb0005 uint32
-			zb0005, err = dc.ReadMapHeader()
-			if err != nil {
-				err = msgp.WrapError(err, "StoringClause")
-				return
-			}
-			for zb0005 > 0 {
-				zb0005--
-				field, err = dc.ReadMapKeyPtr()
-				if err != nil {
-					err = msgp.WrapError(err, "StoringClause")
-					return
-				}
-				switch msgp.UnsafeString(field) {
-				case "ColumnNames":
-					var zb0006 uint32
-					zb0006, err = dc.ReadArrayHeader()
-					if err != nil {
-						err = msgp.WrapError(err, "StoringClause", "ColumnNames")
-						return
-					}
-					if cap(z.StoringClause.ColumnNames) >= int(zb0006) {
-						z.StoringClause.ColumnNames = (z.StoringClause.ColumnNames)[:zb0006]
-					} else {
-						z.StoringClause.ColumnNames = make([]string, zb0006)
-					}
-					for za0002 := range z.StoringClause.ColumnNames {
-						z.StoringClause.ColumnNames[za0002], err = dc.ReadString()
-						if err != nil {
-							err = msgp.WrapError(err, "StoringClause", "ColumnNames", za0002)
-							return
-						}
-					}
-				default:
-					err = dc.Skip()
-					if err != nil {
-						err = msgp.WrapError(err, "StoringClause")
-						return
-					}
-				}
-			}
-		case "Interleaves":
-			var zb0007 uint32
-			zb0007, err = dc.ReadArrayHeader()
-			if err != nil {
-				err = msgp.WrapError(err, "Interleaves")
-				return
-			}
-			if cap(z.Interleaves) >= int(zb0007) {
-				z.Interleaves = (z.Interleaves)[:zb0007]
-			} else {
-				z.Interleaves = make([]Interleave, zb0007)
-			}
-			for za0003 := range z.Interleaves {
-				var zb0008 uint32
-				zb0008, err = dc.ReadMapHeader()
-				if err != nil {
-					err = msgp.WrapError(err, "Interleaves", za0003)
-					return
-				}
-				for zb0008 > 0 {
-					zb0008--
-					field, err = dc.ReadMapKeyPtr()
-					if err != nil {
-						err = msgp.WrapError(err, "Interleaves", za0003)
-						return
-					}
-					switch msgp.UnsafeString(field) {
-					case "TableName":
-						z.Interleaves[za0003].TableName, err = dc.ReadString()
-						if err != nil {
-							err = msgp.WrapError(err, "Interleaves", za0003, "TableName")
-							return
-						}
-					default:
-						err = dc.Skip()
-						if err != nil {
-							err = msgp.WrapError(err, "Interleaves", za0003)
-							return
-						}
-					}
-				}
-			}
 		default:
 			err = dc.Skip()
 			if err != nil {
@@ -714,9 +630,9 @@ func (z *IndexCatalog) DecodeMsg(dc *msgp.Reader) (err error) {
 
 // EncodeMsg implements msgp.Encodable
 func (z *IndexCatalog) EncodeMsg(en *msgp.Writer) (err error) {
-	// map header, size 5
+	// map header, size 3
 	// write "IndexName"
-	err = en.Append(0x85, 0xa9, 0x49, 0x6e, 0x64, 0x65, 0x78, 0x4e, 0x61, 0x6d, 0x65)
+	err = en.Append(0x83, 0xa9, 0x49, 0x6e, 0x64, 0x65, 0x78, 0x4e, 0x61, 0x6d, 0x65)
 	if err != nil {
 		return
 	}
@@ -768,61 +684,15 @@ func (z *IndexCatalog) EncodeMsg(en *msgp.Writer) (err error) {
 			return
 		}
 	}
-	// write "StoringClause"
-	err = en.Append(0xad, 0x53, 0x74, 0x6f, 0x72, 0x69, 0x6e, 0x67, 0x43, 0x6c, 0x61, 0x75, 0x73, 0x65)
-	if err != nil {
-		return
-	}
-	// map header, size 1
-	// write "ColumnNames"
-	err = en.Append(0x81, 0xab, 0x43, 0x6f, 0x6c, 0x75, 0x6d, 0x6e, 0x4e, 0x61, 0x6d, 0x65, 0x73)
-	if err != nil {
-		return
-	}
-	err = en.WriteArrayHeader(uint32(len(z.StoringClause.ColumnNames)))
-	if err != nil {
-		err = msgp.WrapError(err, "StoringClause", "ColumnNames")
-		return
-	}
-	for za0002 := range z.StoringClause.ColumnNames {
-		err = en.WriteString(z.StoringClause.ColumnNames[za0002])
-		if err != nil {
-			err = msgp.WrapError(err, "StoringClause", "ColumnNames", za0002)
-			return
-		}
-	}
-	// write "Interleaves"
-	err = en.Append(0xab, 0x49, 0x6e, 0x74, 0x65, 0x72, 0x6c, 0x65, 0x61, 0x76, 0x65, 0x73)
-	if err != nil {
-		return
-	}
-	err = en.WriteArrayHeader(uint32(len(z.Interleaves)))
-	if err != nil {
-		err = msgp.WrapError(err, "Interleaves")
-		return
-	}
-	for za0003 := range z.Interleaves {
-		// map header, size 1
-		// write "TableName"
-		err = en.Append(0x81, 0xa9, 0x54, 0x61, 0x62, 0x6c, 0x65, 0x4e, 0x61, 0x6d, 0x65)
-		if err != nil {
-			return
-		}
-		err = en.WriteString(z.Interleaves[za0003].TableName)
-		if err != nil {
-			err = msgp.WrapError(err, "Interleaves", za0003, "TableName")
-			return
-		}
-	}
 	return
 }
 
 // MarshalMsg implements msgp.Marshaler
 func (z *IndexCatalog) MarshalMsg(b []byte) (o []byte, err error) {
 	o = msgp.Require(b, z.Msgsize())
-	// map header, size 5
+	// map header, size 3
 	// string "IndexName"
-	o = append(o, 0x85, 0xa9, 0x49, 0x6e, 0x64, 0x65, 0x78, 0x4e, 0x61, 0x6d, 0x65)
+	o = append(o, 0x83, 0xa9, 0x49, 0x6e, 0x64, 0x65, 0x78, 0x4e, 0x61, 0x6d, 0x65)
 	o = msgp.AppendString(o, z.IndexName)
 	// string "Unique"
 	o = append(o, 0xa6, 0x55, 0x6e, 0x69, 0x71, 0x75, 0x65)
@@ -838,24 +708,6 @@ func (z *IndexCatalog) MarshalMsg(b []byte) (o []byte, err error) {
 		// string "KeyOrder"
 		o = append(o, 0xa8, 0x4b, 0x65, 0x79, 0x4f, 0x72, 0x64, 0x65, 0x72)
 		o = msgp.AppendInt(o, int(z.Keys[za0001].KeyOrder))
-	}
-	// string "StoringClause"
-	o = append(o, 0xad, 0x53, 0x74, 0x6f, 0x72, 0x69, 0x6e, 0x67, 0x43, 0x6c, 0x61, 0x75, 0x73, 0x65)
-	// map header, size 1
-	// string "ColumnNames"
-	o = append(o, 0x81, 0xab, 0x43, 0x6f, 0x6c, 0x75, 0x6d, 0x6e, 0x4e, 0x61, 0x6d, 0x65, 0x73)
-	o = msgp.AppendArrayHeader(o, uint32(len(z.StoringClause.ColumnNames)))
-	for za0002 := range z.StoringClause.ColumnNames {
-		o = msgp.AppendString(o, z.StoringClause.ColumnNames[za0002])
-	}
-	// string "Interleaves"
-	o = append(o, 0xab, 0x49, 0x6e, 0x74, 0x65, 0x72, 0x6c, 0x65, 0x61, 0x76, 0x65, 0x73)
-	o = msgp.AppendArrayHeader(o, uint32(len(z.Interleaves)))
-	for za0003 := range z.Interleaves {
-		// map header, size 1
-		// string "TableName"
-		o = append(o, 0x81, 0xa9, 0x54, 0x61, 0x62, 0x6c, 0x65, 0x4e, 0x61, 0x6d, 0x65)
-		o = msgp.AppendString(o, z.Interleaves[za0003].TableName)
 	}
 	return
 }
@@ -942,90 +794,6 @@ func (z *IndexCatalog) UnmarshalMsg(bts []byte) (o []byte, err error) {
 					}
 				}
 			}
-		case "StoringClause":
-			var zb0005 uint32
-			zb0005, bts, err = msgp.ReadMapHeaderBytes(bts)
-			if err != nil {
-				err = msgp.WrapError(err, "StoringClause")
-				return
-			}
-			for zb0005 > 0 {
-				zb0005--
-				field, bts, err = msgp.ReadMapKeyZC(bts)
-				if err != nil {
-					err = msgp.WrapError(err, "StoringClause")
-					return
-				}
-				switch msgp.UnsafeString(field) {
-				case "ColumnNames":
-					var zb0006 uint32
-					zb0006, bts, err = msgp.ReadArrayHeaderBytes(bts)
-					if err != nil {
-						err = msgp.WrapError(err, "StoringClause", "ColumnNames")
-						return
-					}
-					if cap(z.StoringClause.ColumnNames) >= int(zb0006) {
-						z.StoringClause.ColumnNames = (z.StoringClause.ColumnNames)[:zb0006]
-					} else {
-						z.StoringClause.ColumnNames = make([]string, zb0006)
-					}
-					for za0002 := range z.StoringClause.ColumnNames {
-						z.StoringClause.ColumnNames[za0002], bts, err = msgp.ReadStringBytes(bts)
-						if err != nil {
-							err = msgp.WrapError(err, "StoringClause", "ColumnNames", za0002)
-							return
-						}
-					}
-				default:
-					bts, err = msgp.Skip(bts)
-					if err != nil {
-						err = msgp.WrapError(err, "StoringClause")
-						return
-					}
-				}
-			}
-		case "Interleaves":
-			var zb0007 uint32
-			zb0007, bts, err = msgp.ReadArrayHeaderBytes(bts)
-			if err != nil {
-				err = msgp.WrapError(err, "Interleaves")
-				return
-			}
-			if cap(z.Interleaves) >= int(zb0007) {
-				z.Interleaves = (z.Interleaves)[:zb0007]
-			} else {
-				z.Interleaves = make([]Interleave, zb0007)
-			}
-			for za0003 := range z.Interleaves {
-				var zb0008 uint32
-				zb0008, bts, err = msgp.ReadMapHeaderBytes(bts)
-				if err != nil {
-					err = msgp.WrapError(err, "Interleaves", za0003)
-					return
-				}
-				for zb0008 > 0 {
-					zb0008--
-					field, bts, err = msgp.ReadMapKeyZC(bts)
-					if err != nil {
-						err = msgp.WrapError(err, "Interleaves", za0003)
-						return
-					}
-					switch msgp.UnsafeString(field) {
-					case "TableName":
-						z.Interleaves[za0003].TableName, bts, err = msgp.ReadStringBytes(bts)
-						if err != nil {
-							err = msgp.WrapError(err, "Interleaves", za0003, "TableName")
-							return
-						}
-					default:
-						bts, err = msgp.Skip(bts)
-						if err != nil {
-							err = msgp.WrapError(err, "Interleaves", za0003)
-							return
-						}
-					}
-				}
-			}
 		default:
 			bts, err = msgp.Skip(bts)
 			if err != nil {
@@ -1044,117 +812,6 @@ func (z *IndexCatalog) Msgsize() (s int) {
 	for za0001 := range z.Keys {
 		s += 1 + 5 + msgp.StringPrefixSize + len(z.Keys[za0001].Name) + 9 + msgp.IntSize
 	}
-	s += 14 + 1 + 12 + msgp.ArrayHeaderSize
-	for za0002 := range z.StoringClause.ColumnNames {
-		s += msgp.StringPrefixSize + len(z.StoringClause.ColumnNames[za0002])
-	}
-	s += 12 + msgp.ArrayHeaderSize
-	for za0003 := range z.Interleaves {
-		s += 1 + 10 + msgp.StringPrefixSize + len(z.Interleaves[za0003].TableName)
-	}
-	return
-}
-
-// DecodeMsg implements msgp.Decodable
-func (z *Interleave) DecodeMsg(dc *msgp.Reader) (err error) {
-	var field []byte
-	_ = field
-	var zb0001 uint32
-	zb0001, err = dc.ReadMapHeader()
-	if err != nil {
-		err = msgp.WrapError(err)
-		return
-	}
-	for zb0001 > 0 {
-		zb0001--
-		field, err = dc.ReadMapKeyPtr()
-		if err != nil {
-			err = msgp.WrapError(err)
-			return
-		}
-		switch msgp.UnsafeString(field) {
-		case "TableName":
-			z.TableName, err = dc.ReadString()
-			if err != nil {
-				err = msgp.WrapError(err, "TableName")
-				return
-			}
-		default:
-			err = dc.Skip()
-			if err != nil {
-				err = msgp.WrapError(err)
-				return
-			}
-		}
-	}
-	return
-}
-
-// EncodeMsg implements msgp.Encodable
-func (z Interleave) EncodeMsg(en *msgp.Writer) (err error) {
-	// map header, size 1
-	// write "TableName"
-	err = en.Append(0x81, 0xa9, 0x54, 0x61, 0x62, 0x6c, 0x65, 0x4e, 0x61, 0x6d, 0x65)
-	if err != nil {
-		return
-	}
-	err = en.WriteString(z.TableName)
-	if err != nil {
-		err = msgp.WrapError(err, "TableName")
-		return
-	}
-	return
-}
-
-// MarshalMsg implements msgp.Marshaler
-func (z Interleave) MarshalMsg(b []byte) (o []byte, err error) {
-	o = msgp.Require(b, z.Msgsize())
-	// map header, size 1
-	// string "TableName"
-	o = append(o, 0x81, 0xa9, 0x54, 0x61, 0x62, 0x6c, 0x65, 0x4e, 0x61, 0x6d, 0x65)
-	o = msgp.AppendString(o, z.TableName)
-	return
-}
-
-// UnmarshalMsg implements msgp.Unmarshaler
-func (z *Interleave) UnmarshalMsg(bts []byte) (o []byte, err error) {
-	var field []byte
-	_ = field
-	var zb0001 uint32
-	zb0001, bts, err = msgp.ReadMapHeaderBytes(bts)
-	if err != nil {
-		err = msgp.WrapError(err)
-		return
-	}
-	for zb0001 > 0 {
-		zb0001--
-		field, bts, err = msgp.ReadMapKeyZC(bts)
-		if err != nil {
-			err = msgp.WrapError(err)
-			return
-		}
-		switch msgp.UnsafeString(field) {
-		case "TableName":
-			z.TableName, bts, err = msgp.ReadStringBytes(bts)
-			if err != nil {
-				err = msgp.WrapError(err, "TableName")
-				return
-			}
-		default:
-			bts, err = msgp.Skip(bts)
-			if err != nil {
-				err = msgp.WrapError(err)
-				return
-			}
-		}
-	}
-	o = bts
-	return
-}
-
-// Msgsize returns an upper bound estimate of the number of bytes occupied by the serialized message
-func (z Interleave) Msgsize() (s int) {
-	s = 1 + 10 + msgp.StringPrefixSize + len(z.TableName)
 	return
 }
 
@@ -1503,148 +1160,6 @@ func (z ScalarColumnTypeTag) Msgsize() (s int) {
 }
 
 // DecodeMsg implements msgp.Decodable
-func (z *StoringClause) DecodeMsg(dc *msgp.Reader) (err error) {
-	var field []byte
-	_ = field
-	var zb0001 uint32
-	zb0001, err = dc.ReadMapHeader()
-	if err != nil {
-		err = msgp.WrapError(err)
-		return
-	}
-	for zb0001 > 0 {
-		zb0001--
-		field, err = dc.ReadMapKeyPtr()
-		if err != nil {
-			err = msgp.WrapError(err)
-			return
-		}
-		switch msgp.UnsafeString(field) {
-		case "ColumnNames":
-			var zb0002 uint32
-			zb0002, err = dc.ReadArrayHeader()
-			if err != nil {
-				err = msgp.WrapError(err, "ColumnNames")
-				return
-			}
-			if cap(z.ColumnNames) >= int(zb0002) {
-				z.ColumnNames = (z.ColumnNames)[:zb0002]
-			} else {
-				z.ColumnNames = make([]string, zb0002)
-			}
-			for za0001 := range z.ColumnNames {
-				z.ColumnNames[za0001], err = dc.ReadString()
-				if err != nil {
-					err = msgp.WrapError(err, "ColumnNames", za0001)
-					return
-				}
-			}
-		default:
-			err = dc.Skip()
-			if err != nil {
-				err = msgp.WrapError(err)
-				return
-			}
-		}
-	}
-	return
-}
-
-// EncodeMsg implements msgp.Encodable
-func (z *StoringClause) EncodeMsg(en *msgp.Writer) (err error) {
-	// map header, size 1
-	// write "ColumnNames"
-	err = en.Append(0x81, 0xab, 0x43, 0x6f, 0x6c, 0x75, 0x6d, 0x6e, 0x4e, 0x61, 0x6d, 0x65, 0x73)
-	if err != nil {
-		return
-	}
-	err = en.WriteArrayHeader(uint32(len(z.ColumnNames)))
-	if err != nil {
-		err = msgp.WrapError(err, "ColumnNames")
-		return
-	}
-	for za0001 := range z.ColumnNames {
-		err = en.WriteString(z.ColumnNames[za0001])
-		if err != nil {
-			err = msgp.WrapError(err, "ColumnNames", za0001)
-			return
-		}
-	}
-	return
-}
-
-// MarshalMsg implements msgp.Marshaler
-func (z *StoringClause) MarshalMsg(b []byte) (o []byte, err error) {
-	o = msgp.Require(b, z.Msgsize())
-	// map header, size 1
-	// string "ColumnNames"
-	o = append(o, 0x81, 0xab, 0x43, 0x6f, 0x6c, 0x75, 0x6d, 0x6e, 0x4e, 0x61, 0x6d, 0x65, 0x73)
-	o = msgp.AppendArrayHeader(o, uint32(len(z.ColumnNames)))
-	for za0001 := range z.ColumnNames {
-		o = msgp.AppendString(o, z.ColumnNames[za0001])
-	}
-	return
-}
-
-// UnmarshalMsg implements msgp.Unmarshaler
-func (z *StoringClause) UnmarshalMsg(bts []byte) (o []byte, err error) {
-	var field []byte
-	_ = field
-	var zb0001 uint32
-	zb0001, bts, err = msgp.ReadMapHeaderBytes(bts)
-	if err != nil {
-		err = msgp.WrapError(err)
-		return
-	}
-	for zb0001 > 0 {
-		zb0001--
-		field, bts, err = msgp.ReadMapKeyZC(bts)
-		if err != nil {
-			err = msgp.WrapError(err)
-			return
-		}
-		switch msgp.UnsafeString(field) {
-		case "ColumnNames":
-			var zb0002 uint32
-			zb0002, bts, err = msgp.ReadArrayHeaderBytes(bts)
-			if err != nil {
-				err = msgp.WrapError(err, "ColumnNames")
-				return
-			}
-			if cap(z.ColumnNames) >= int(zb0002) {
-				z.ColumnNames = (z.ColumnNames)[:zb0002]
-			} else {
-				z.ColumnNames = make([]string, zb0002)
-			}
-			for za0001 := range z.ColumnNames {
-				z.ColumnNames[za0001], bts, err = msgp.ReadStringBytes(bts)
-				if err != nil {
-					err = msgp.WrapError(err, "ColumnNames", za0001)
-					return
-				}
-			}
-		default:
-			bts, err = msgp.Skip(bts)
-			if err != nil {
-				err = msgp.WrapError(err)
-				return
-			}
-		}
-	}
-	o = bts
-	return
-}
-
-// Msgsize returns an upper bound estimate of the number of bytes occupied by the serialized message
-func (z *StoringClause) Msgsize() (s int) {
-	s = 1 + 12 + msgp.ArrayHeaderSize
-	for za0001 := range z.ColumnNames {
-		s += msgp.StringPrefixSize + len(z.ColumnNames[za0001])
-	}
-	return
-}
-
-// DecodeMsg implements msgp.Decodable
 func (z *TableCatalog) DecodeMsg(dc *msgp.Reader) (err error) {
 	var field []byte
 	_ = field
@@ -1808,16 +1323,10 @@ func (z *TableCatalog) DecodeMsg(dc *msgp.Reader) (err error) {
 					return
 				}
 			}
-		case "PrimaryKeyMin":
-			z.PrimaryKeyMin, err = dc.ReadInt()
+		case "RecordNo":
+			z.RecordNo, err = dc.ReadInt()
 			if err != nil {
-				err = msgp.WrapError(err, "PrimaryKeyMin")
-				return
-			}
-		case "PrimaryKeyMax":
-			z.PrimaryKeyMax, err = dc.ReadInt()
-			if err != nil {
-				err = msgp.WrapError(err, "PrimaryKeyMax")
+				err = msgp.WrapError(err, "RecordNo")
 				return
 			}
 		case "RecordTotal":
@@ -1845,9 +1354,9 @@ func (z *TableCatalog) DecodeMsg(dc *msgp.Reader) (err error) {
 
 // EncodeMsg implements msgp.Encodable
 func (z *TableCatalog) EncodeMsg(en *msgp.Writer) (err error) {
-	// map header, size 9
+	// map header, size 8
 	// write "TableName"
-	err = en.Append(0x89, 0xa9, 0x54, 0x61, 0x62, 0x6c, 0x65, 0x4e, 0x61, 0x6d, 0x65)
+	err = en.Append(0x88, 0xa9, 0x54, 0x61, 0x62, 0x6c, 0x65, 0x4e, 0x61, 0x6d, 0x65)
 	if err != nil {
 		return
 	}
@@ -1954,24 +1463,14 @@ func (z *TableCatalog) EncodeMsg(en *msgp.Writer) (err error) {
 			return
 		}
 	}
-	// write "PrimaryKeyMin"
-	err = en.Append(0xad, 0x50, 0x72, 0x69, 0x6d, 0x61, 0x72, 0x79, 0x4b, 0x65, 0x79, 0x4d, 0x69, 0x6e)
+	// write "RecordNo"
+	err = en.Append(0xa8, 0x52, 0x65, 0x63, 0x6f, 0x72, 0x64, 0x4e, 0x6f)
 	if err != nil {
 		return
 	}
-	err = en.WriteInt(z.PrimaryKeyMin)
+	err = en.WriteInt(z.RecordNo)
 	if err != nil {
-		err = msgp.WrapError(err, "PrimaryKeyMin")
-		return
-	}
-	// write "PrimaryKeyMax"
-	err = en.Append(0xad, 0x50, 0x72, 0x69, 0x6d, 0x61, 0x72, 0x79, 0x4b, 0x65, 0x79, 0x4d, 0x61, 0x78)
-	if err != nil {
-		return
-	}
-	err = en.WriteInt(z.PrimaryKeyMax)
-	if err != nil {
-		err = msgp.WrapError(err, "PrimaryKeyMax")
+		err = msgp.WrapError(err, "RecordNo")
 		return
 	}
 	// write "RecordTotal"
@@ -2000,9 +1499,9 @@ func (z *TableCatalog) EncodeMsg(en *msgp.Writer) (err error) {
 // MarshalMsg implements msgp.Marshaler
 func (z *TableCatalog) MarshalMsg(b []byte) (o []byte, err error) {
 	o = msgp.Require(b, z.Msgsize())
-	// map header, size 9
+	// map header, size 8
 	// string "TableName"
-	o = append(o, 0x89, 0xa9, 0x54, 0x61, 0x62, 0x6c, 0x65, 0x4e, 0x61, 0x6d, 0x65)
+	o = append(o, 0x88, 0xa9, 0x54, 0x61, 0x62, 0x6c, 0x65, 0x4e, 0x61, 0x6d, 0x65)
 	o = msgp.AppendString(o, z.TableName)
 	// string "ColumnsMap"
 	o = append(o, 0xaa, 0x43, 0x6f, 0x6c, 0x75, 0x6d, 0x6e, 0x73, 0x4d, 0x61, 0x70)
@@ -2046,12 +1545,9 @@ func (z *TableCatalog) MarshalMsg(b []byte) (o []byte, err error) {
 			return
 		}
 	}
-	// string "PrimaryKeyMin"
-	o = append(o, 0xad, 0x50, 0x72, 0x69, 0x6d, 0x61, 0x72, 0x79, 0x4b, 0x65, 0x79, 0x4d, 0x69, 0x6e)
-	o = msgp.AppendInt(o, z.PrimaryKeyMin)
-	// string "PrimaryKeyMax"
-	o = append(o, 0xad, 0x50, 0x72, 0x69, 0x6d, 0x61, 0x72, 0x79, 0x4b, 0x65, 0x79, 0x4d, 0x61, 0x78)
-	o = msgp.AppendInt(o, z.PrimaryKeyMax)
+	// string "RecordNo"
+	o = append(o, 0xa8, 0x52, 0x65, 0x63, 0x6f, 0x72, 0x64, 0x4e, 0x6f)
+	o = msgp.AppendInt(o, z.RecordNo)
 	// string "RecordTotal"
 	o = append(o, 0xab, 0x52, 0x65, 0x63, 0x6f, 0x72, 0x64, 0x54, 0x6f, 0x74, 0x61, 0x6c)
 	o = msgp.AppendInt(o, z.RecordTotal)
@@ -2225,16 +1721,10 @@ func (z *TableCatalog) UnmarshalMsg(bts []byte) (o []byte, err error) {
 					return
 				}
 			}
-		case "PrimaryKeyMin":
-			z.PrimaryKeyMin, bts, err = msgp.ReadIntBytes(bts)
+		case "RecordNo":
+			z.RecordNo, bts, err = msgp.ReadIntBytes(bts)
 			if err != nil {
-				err = msgp.WrapError(err, "PrimaryKeyMin")
-				return
-			}
-		case "PrimaryKeyMax":
-			z.PrimaryKeyMax, bts, err = msgp.ReadIntBytes(bts)
-			if err != nil {
-				err = msgp.WrapError(err, "PrimaryKeyMax")
+				err = msgp.WrapError(err, "RecordNo")
 				return
 			}
 		case "RecordTotal":
@@ -2278,7 +1768,7 @@ func (z *TableCatalog) Msgsize() (s int) {
 	for za0004 := range z.Indexs {
 		s += z.Indexs[za0004].Msgsize()
 	}
-	s += 14 + msgp.IntSize + 14 + msgp.IntSize + 12 + msgp.IntSize + 13 + msgp.IntSize
+	s += 9 + msgp.IntSize + 12 + msgp.IntSize + 13 + msgp.IntSize
 	return
 }
 
@@ -2436,162 +1926,5 @@ func (z TableCatalogMap) Msgsize() (s int) {
 			}
 		}
 	}
-	return
-}
-
-// DecodeMsg implements msgp.Decodable
-func (z *UniquesColumn) DecodeMsg(dc *msgp.Reader) (err error) {
-	var field []byte
-	_ = field
-	var zb0001 uint32
-	zb0001, err = dc.ReadMapHeader()
-	if err != nil {
-		err = msgp.WrapError(err)
-		return
-	}
-	for zb0001 > 0 {
-		zb0001--
-		field, err = dc.ReadMapKeyPtr()
-		if err != nil {
-			err = msgp.WrapError(err)
-			return
-		}
-		switch msgp.UnsafeString(field) {
-		case "ColumnName":
-			z.ColumnName, err = dc.ReadString()
-			if err != nil {
-				err = msgp.WrapError(err, "ColumnName")
-				return
-			}
-		case "Value":
-			err = z.Value.DecodeMsg(dc)
-			if err != nil {
-				err = msgp.WrapError(err, "Value")
-				return
-			}
-		case "HasIndex":
-			z.HasIndex, err = dc.ReadBool()
-			if err != nil {
-				err = msgp.WrapError(err, "HasIndex")
-				return
-			}
-		default:
-			err = dc.Skip()
-			if err != nil {
-				err = msgp.WrapError(err)
-				return
-			}
-		}
-	}
-	return
-}
-
-// EncodeMsg implements msgp.Encodable
-func (z *UniquesColumn) EncodeMsg(en *msgp.Writer) (err error) {
-	// map header, size 3
-	// write "ColumnName"
-	err = en.Append(0x83, 0xaa, 0x43, 0x6f, 0x6c, 0x75, 0x6d, 0x6e, 0x4e, 0x61, 0x6d, 0x65)
-	if err != nil {
-		return
-	}
-	err = en.WriteString(z.ColumnName)
-	if err != nil {
-		err = msgp.WrapError(err, "ColumnName")
-		return
-	}
-	// write "Value"
-	err = en.Append(0xa5, 0x56, 0x61, 0x6c, 0x75, 0x65)
-	if err != nil {
-		return
-	}
-	err = z.Value.EncodeMsg(en)
-	if err != nil {
-		err = msgp.WrapError(err, "Value")
-		return
-	}
-	// write "HasIndex"
-	err = en.Append(0xa8, 0x48, 0x61, 0x73, 0x49, 0x6e, 0x64, 0x65, 0x78)
-	if err != nil {
-		return
-	}
-	err = en.WriteBool(z.HasIndex)
-	if err != nil {
-		err = msgp.WrapError(err, "HasIndex")
-		return
-	}
-	return
-}
-
-// MarshalMsg implements msgp.Marshaler
-func (z *UniquesColumn) MarshalMsg(b []byte) (o []byte, err error) {
-	o = msgp.Require(b, z.Msgsize())
-	// map header, size 3
-	// string "ColumnName"
-	o = append(o, 0x83, 0xaa, 0x43, 0x6f, 0x6c, 0x75, 0x6d, 0x6e, 0x4e, 0x61, 0x6d, 0x65)
-	o = msgp.AppendString(o, z.ColumnName)
-	// string "Value"
-	o = append(o, 0xa5, 0x56, 0x61, 0x6c, 0x75, 0x65)
-	o, err = z.Value.MarshalMsg(o)
-	if err != nil {
-		err = msgp.WrapError(err, "Value")
-		return
-	}
-	// string "HasIndex"
-	o = append(o, 0xa8, 0x48, 0x61, 0x73, 0x49, 0x6e, 0x64, 0x65, 0x78)
-	o = msgp.AppendBool(o, z.HasIndex)
-	return
-}
-
-// UnmarshalMsg implements msgp.Unmarshaler
-func (z *UniquesColumn) UnmarshalMsg(bts []byte) (o []byte, err error) {
-	var field []byte
-	_ = field
-	var zb0001 uint32
-	zb0001, bts, err = msgp.ReadMapHeaderBytes(bts)
-	if err != nil {
-		err = msgp.WrapError(err)
-		return
-	}
-	for zb0001 > 0 {
-		zb0001--
-		field, bts, err = msgp.ReadMapKeyZC(bts)
-		if err != nil {
-			err = msgp.WrapError(err)
-			return
-		}
-		switch msgp.UnsafeString(field) {
-		case "ColumnName":
-			z.ColumnName, bts, err = msgp.ReadStringBytes(bts)
-			if err != nil {
-				err = msgp.WrapError(err, "ColumnName")
-				return
-			}
-		case "Value":
-			bts, err = z.Value.UnmarshalMsg(bts)
-			if err != nil {
-				err = msgp.WrapError(err, "Value")
-				return
-			}
-		case "HasIndex":
-			z.HasIndex, bts, err = msgp.ReadBoolBytes(bts)
-			if err != nil {
-				err = msgp.WrapError(err, "HasIndex")
-				return
-			}
-		default:
-			bts, err = msgp.Skip(bts)
-			if err != nil {
-				err = msgp.WrapError(err)
-				return
-			}
-		}
-	}
-	o = bts
-	return
-}
-
-// Msgsize returns an upper bound estimate of the number of bytes occupied by the serialized message
-func (z *UniquesColumn) Msgsize() (s int) {
-	s = 1 + 11 + msgp.StringPrefixSize + len(z.ColumnName) + 6 + z.Value.Msgsize() + 9 + msgp.BoolSize
 	return
 }

@@ -3,8 +3,8 @@ package main
 import (
 	"SQL-On-LevelDB/src/db"
 	"SQL-On-LevelDB/src/executor"
-	"SQL-On-LevelDB/src/parser"
-	"SQL-On-LevelDB/src/types"
+	"SQL-On-LevelDB/src/interpreter/parser"
+	"SQL-On-LevelDB/src/interpreter/types"
 	"bufio"
 	"fmt"
 	"os"
@@ -104,11 +104,12 @@ func runShell(r chan<- error) {
 		ll.AppendHistory(s.Text())
 	}
 
-	StatementChannel := make(chan types.DStatements, 500)                  //用于传输操作指令通道
-	FinishChannel := make(chan error, 500)                                 //用于api执行完成反馈通道
-	OperationChannel := make(chan db.DbOperation, 500)                     //用于传输数据库操作
-	go executor.Execute(StatementChannel, FinishChannel, OperationChannel) //begin the runtime for exec
-	go db.RunDb(OperationChannel)
+	StatementChannel := make(chan types.DStatements, 500)                                   //用于传输操作指令通道
+	FinishChannel := make(chan error, 500)                                                  //用于api执行完成反馈通道
+	OperationChannel := make(chan db.DbOperation, 500)                                      //用于传输数据库操作
+	DbResultChannel := make(chan db.DbResultBatch, 500)                                     //用于传输数据库结果
+	go executor.Execute(StatementChannel, FinishChannel, OperationChannel, DbResultChannel) //begin the runtime for exec
+	go db.RunDb(OperationChannel, DbResultChannel)
 	var beginSQLParse = false
 	var sqlText = make([]byte, 0, 100)
 	for { //each sql

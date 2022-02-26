@@ -1,7 +1,7 @@
 package parser
 
 import (
-	"SQL-On-LevelDB/src/lexer"
+	"SQL-On-LevelDB/src/interpreter/lexer"
 	"regexp"
 	"strconv"
 )
