@@ -4,6 +4,7 @@ import (
 	"SQL-On-LevelDB/src/catalog"
 	"SQL-On-LevelDB/src/db"
 	"bytes"
+	"errors"
 	"fmt"
 
 	"github.com/tinylib/msgp/msgp"
@@ -60,10 +61,28 @@ func SetDbChannel(channel1 chan<- db.DbOperation, channel2 <-chan db.DbResultBat
 	operationChannel = channel1
 	resultChannel = channel2
 }
+func GetOne(key []byte) []byte {
+	operation := db.DbOperation{DbOperationType: db.GetOne, Key: []byte(key), Value: []byte("")}
+	operationChannel <- operation
+	result := <-resultChannel
+	//fmt.Println(string(result.Result[0]))
+	if result.Cnt == 0 {
+		return nil
+	} else {
+		return result.Result[0]
+	}
 
+}
 func CreateTable(tablecatalog *catalog.TableCatalog) error {
 
 	m_key := "m_" + tablecatalog.TableName
+	//先检查要新建的表的表名是否重复了
+	value := GetOne([]byte(m_key))
+	if value != nil {
+		err := errors.New("create table error:this table already exists")
+		finishChannel <- err
+		return err
+	}
 	var buf bytes.Buffer
 	_ = msgp.Encode(&buf, tablecatalog)
 

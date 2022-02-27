@@ -8,7 +8,8 @@ type DbOperationTag = int
 
 const (
 	Put DbOperationTag = iota
-	Get
+	GetOne
+	GetBatch
 	Delete
 )
 
@@ -42,6 +43,20 @@ func RunDb(operationChannel <-chan DbOperation, resultChannel chan<- DbResultBat
 			result.Cnt = 1
 			result.Err = err
 			resultChannel <- result
+		case GetOne:
+			data, err := db.Get(operation.Key, nil)
+			if len(data) == 0 {
+				result.Cnt = 0
+				//fmt.Println(string(data))
+				result.Err = err
+				resultChannel <- result
+			} else {
+				result.Cnt = 1
+				result.Err = err
+				result.Result = append(result.Result, DbResult(data))
+				resultChannel <- result
+			}
+
 		}
 
 	}

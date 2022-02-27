@@ -6,7 +6,6 @@ import (
 	"fmt"
 
 	"github.com/syndtr/goleveldb/leveldb"
-	"github.com/syndtr/goleveldb/leveldb/util"
 )
 
 func main() {
@@ -25,11 +24,13 @@ func main() {
 	// iter.Release()
 	//确定集合范围进行查找，顺序为字典序
 	//左闭右开，不包含limit
-	iter := db.NewIterator(&util.Range{Start: []byte("peo"), Limit: []byte("people4")}, nil)
-	for iter.Next() {
-		fmt.Printf("[%s]:%s\n", iter.Key(), iter.Value())
-	}
-	iter.Release()
+	// iter := db.NewIterator(&util.Range{Start: []byte("peo"), Limit: []byte("people4")}, nil)
+	// for iter.Next() {
+	// 	fmt.Printf("[%s]:%s\n", iter.Key(), iter.Value())
+	// }
+	// iter.Release()
 	//data, _ := db.Get([]byte("key"), nil) //data是字节切片
 	//fmt.Print(data)
+	data, err := db.Get([]byte("how"), nil)
+	fmt.Println(data, err)
 }

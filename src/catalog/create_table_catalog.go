@@ -5,6 +5,7 @@ import (
 )
 
 func createTableCheck(statement *TableCatalog) error {
+
 	recordlength := 0
 	columnNum := 0
 	bytesPos := make([]int, len(statement.ColumnsMap)+1)

@@ -9,6 +9,11 @@ type Error struct {
 	ErrorHint error       //错误提示
 }
 
+func CreateTableError() Error {
+	return Error{
+		Status: false,
+	}
+}
 func CreateFailError(e error) Error {
 	return Error{
 		Status:    false,

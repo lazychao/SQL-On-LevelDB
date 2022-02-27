@@ -38,7 +38,8 @@ func Execute(dataChannel <-chan types.DStatements, finishChannel chan<- error, o
 
 //CreateTableAPI CM进行检查，index检查 语法检查  之后调用RM中的CreateTable创建表， 之后使用RM中的CreateIndex建索引
 func CreateTableAPI(statement types.CreateTableStatement) Error.Error {
-	//先检查要新建的表是否合法
+
+	//先检查表
 	catalog, err := catalog.CreateTableInitAndCheck(statement)
 	if err != nil {
 		return Error.CreateFailError(err)
