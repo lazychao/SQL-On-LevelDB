@@ -178,3 +178,32 @@
 21:08:27.347815 db@janitor F·7 G·0
 21:08:27.347854 db@open done T·17.72983ms
 21:09:23.758018 db@close closing
+=============== Feb 27, 2022 (CST) ===============
+17:00:18.446248 log@legend F·NumFile S·FileSize N·Entry C·BadEntry B·BadBlock Ke·KeyError D·DroppedEntry L·Level Q·SeqNum T·TimeElapsed
+17:00:18.447278 version@stat F·[3 2] S·762B[433B 329B] Sc·[0.75 0.00]
+17:00:18.447300 db@open opening
+17:00:18.447330 journal@recovery F·1
+17:00:18.447974 journal@recovery recovering @41
+17:00:18.450326 memdb@flush created L0@43 N·2 S·150B "m_perso2,v43":"m_p..on1,v42"
+17:00:18.450507 version@stat F·[4 2] S·912B[583B 329B] Sc·[1.00 0.00]
+17:00:18.455160 db@janitor F·8 G·0
+17:00:18.455198 db@open done T·7.891092ms
+17:00:18.455258 table@compaction L0·3 -> L1·1 S·625B Q·44
+17:00:18.457507 table@build created L1@46 N·7 S·218B "m_people,v35":"m_pp,v37"
+17:00:18.457562 version@stat F·[1 2] S·505B[121B 384B] Sc·[0.25 0.00]
+17:00:18.458755 table@compaction committed F-3 S-407B Ke·0 D·3 T·3.466545ms
+17:00:18.458805 table@remove removed @43
+17:00:18.458859 table@remove removed @40
+17:00:18.458895 table@remove removed @37
+17:00:18.458926 table@remove removed @36
+=============== Feb 27, 2022 (CST) ===============
+17:01:40.522629 log@legend F·NumFile S·FileSize N·Entry C·BadEntry B·BadBlock Ke·KeyError D·DroppedEntry L·Level Q·SeqNum T·TimeElapsed
+17:01:40.522836 version@stat F·[1 2] S·505B[121B 384B] Sc·[0.25 0.00]
+17:01:40.522856 db@open opening
+17:01:40.522881 journal@recovery F·1
+17:01:40.523649 journal@recovery recovering @44
+17:01:40.537205 memdb@flush created L0@47 N·1 S·339B "m_people,v45":"m_people,v45"
+17:01:40.537580 version@stat F·[2 2] S·844B[460B 384B] Sc·[0.50 0.00]
+17:01:40.542191 db@janitor F·6 G·0
+17:01:40.542222 db@open done T·19.354659ms
+17:02:39.039962 db@close closing

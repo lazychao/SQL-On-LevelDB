@@ -1,8 +1,6 @@
 package db
 
 import (
-	"fmt"
-
 	"github.com/syndtr/goleveldb/leveldb"
 )
 
@@ -24,8 +22,8 @@ type DbResultBatch struct {
 }
 type DbOperation struct {
 	DbOperationType DbOperationTag
-	Key             string
-	Value           string
+	Key             []byte
+	Value           []byte
 }
 
 func RunDb(operationChannel <-chan DbOperation, resultChannel chan<- DbResultBatch) {
@@ -37,10 +35,10 @@ func RunDb(operationChannel <-chan DbOperation, resultChannel chan<- DbResultBat
 		var result DbResultBatch
 		switch operation.DbOperationType {
 		case Put:
-			db.Put([]byte(operation.Key), []byte(operation.Value), nil)
-			data, err := db.Get([]byte(operation.Key), nil) //data是字节切片
+			db.Put(operation.Key, operation.Value, nil)
+			data, err := db.Get(operation.Key, nil) //data是字节切片
 			result.Result = append(result.Result, DbResult(data))
-			fmt.Println(string(data))
+			//fmt.Println(string(data))
 			result.Cnt = 1
 			result.Err = err
 			resultChannel <- result
