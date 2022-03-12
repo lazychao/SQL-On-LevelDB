@@ -1,5 +1,9 @@
-package Utils
+package utils
 
+import (
+	"bytes"
+	"encoding/binary"
+)
 
 func BoolsToBytes(t []bool) []byte {
 	b := make([]byte, (len(t)+7)/8)
@@ -22,12 +26,19 @@ func BytesToBools(b []byte) []bool {
 	}
 	return t
 }
+
 //遇到0就截止 返回
-func CString(b []byte) string  {
+func CString(b []byte) string {
 	for idx, c := range b {
 		if c == 0 {
 			return string(b[:idx])
 		}
 	}
 	return string(b)
+}
+func IntToBytes(n int) []byte {
+	x := int32(n)
+	bytesBuffer := bytes.NewBuffer([]byte{})
+	binary.Write(bytesBuffer, binary.BigEndian, x)
+	return bytesBuffer.Bytes()
 }

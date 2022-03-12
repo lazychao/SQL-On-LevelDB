@@ -1,45 +1,46 @@
-package catalog
+package check
 
 import (
+	"SQL-On-LevelDB/src/catalog"
 	"errors"
 )
 
-func createTableCheck(statement *TableCatalog) error {
+func createTableCheck(statement *catalog.TableCatalog) error {
 
 	recordlength := 0
 	columnNum := 0
 	bytesPos := make([]int, len(statement.ColumnsMap)+1)
 
 	for _, item := range statement.ColumnsMap { //check the type and length
-		if item.Type.TypeTag > Timestamp || item.Type.TypeTag < Bool {
+		if item.Type.TypeTag > catalog.Timestamp || item.Type.TypeTag < catalog.Bool {
 			return errors.New("column " + item.Name + " has a illegal type")
 		}
-		if item.Type.TypeTag == Bytes && item.Type.Length > 255 {
+		if item.Type.TypeTag == catalog.Bytes && item.Type.Length > 255 {
 			return errors.New("column " + item.Name + " has a length > 255, please set the length between 0~255")
 		}
 		switch item.Type.TypeTag {
-		case Bool:
+		case catalog.Bool:
 			recordlength += 1
 			bytesPos[item.ColumnPos] = 1
-		case Int64:
+		case catalog.Int64:
 			recordlength += 8
 			bytesPos[item.ColumnPos] = 8
-		case Float64:
+		case catalog.Float64:
 			recordlength += 8
 			bytesPos[item.ColumnPos] = 8
-		case String, Bytes:
+		case catalog.String, catalog.Bytes:
 			recordlength += item.Type.Length //string is not like thess, but nowsday we don't use string type
 			bytesPos[item.ColumnPos] = item.Type.Length
-		case Date:
+		case catalog.Date:
 			recordlength += 5 //I don't know how length
 			bytesPos[item.ColumnPos] = 5
-		case Timestamp:
+		case catalog.Timestamp:
 			recordlength += 8 //I don't know
 			bytesPos[item.ColumnPos] = 8
-		case Null:
+		case catalog.Null:
 			recordlength += 8 //it can't be null at create time
 			bytesPos[item.ColumnPos] = 8
-		case Alien:
+		case catalog.Alien:
 			recordlength += 0 // I don't know
 			bytesPos[item.ColumnPos] = 0
 		}
@@ -79,21 +80,22 @@ func createTableCheck(statement *TableCatalog) error {
 			Keys      []Key
 		}
 	*/
-	//要为每一个unique的键都增加索引？？
-	//indexs := make([]IndexCatalog, 0)
-	// for _, item := range statement.ColumnsMap {
-	// 	if item.Unique {
-	// 		indexs = append(indexs, IndexCatalog{
-	// 			IndexName: item.Name + "_index",
-	// 			Unique:    true,
-	// 			Keys: []Key{
-	// 				{
-	// 					Name:     item.Name,
-	// 					KeyOrder: Asc,
-	// 				},
-	// 			},
-	// 		})
-	// 	}
-	// }
+	//要为每一个unique的键都增加索引
+
+	for _, item := range statement.ColumnsMap {
+		if item.Unique {
+			statement.Indexs = append(statement.Indexs, catalog.IndexCatalog{
+				IndexName: item.Name,
+				Unique:    true,
+				Keys: []catalog.Key{
+					{
+						Name:     item.Name,
+						KeyOrder: catalog.Asc,
+					},
+				},
+			})
+		}
+	}
+
 	return nil
 }

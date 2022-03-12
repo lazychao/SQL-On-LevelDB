@@ -2,14 +2,15 @@ package catalog
 
 import (
 	"SQL-On-LevelDB/src/interpreter/types"
+	"SQL-On-LevelDB/src/interpreter/value"
 	"encoding/json"
 )
 
 //go:generate msgp
-type OnDelete int
-type KeyOrder int
-type ScalarColumnTypeTag int
-type OperationType int
+type OnDelete = int
+type KeyOrder = int
+type ScalarColumnTypeTag = int
+type OperationType = int
 
 type TableCatalogMap map[string]*TableCatalog
 
@@ -73,12 +74,10 @@ type IndexCatalog struct {
 	Unique    bool
 	Keys      []Key
 }
-
-// type UniquesColumn struct {
-// 	ColumnName string
-// 	Value      value.Value
-// 	HasIndex   bool
-// }
+type UniquesColumn struct {
+	ColumnName string
+	Value      value.Value
+}
 
 //把CreateTableStatement结构体的属性赋给TableCatalog结构体 先变成json字符串再反序列成另一个结构体
 func CreateTableStatement2TableCatalog(a *types.CreateTableStatement) *TableCatalog {

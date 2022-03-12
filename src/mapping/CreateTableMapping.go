@@ -73,6 +73,7 @@ func GetOne(key []byte) []byte {
 	}
 
 }
+
 func CreateTable(tablecatalog *catalog.TableCatalog) error {
 
 	m_key := "m_" + tablecatalog.TableName
@@ -101,6 +102,31 @@ func CreateTable(tablecatalog *catalog.TableCatalog) error {
 		fmt.Println(k)
 	}
 	finishChannel <- result.Err
+
+	return nil
+}
+
+//not alter table operation.
+func UpdateTable(tablecatalog *catalog.TableCatalog) error {
+
+	m_key := "m_" + tablecatalog.TableName
+
+	var buf bytes.Buffer
+	_ = msgp.Encode(&buf, tablecatalog)
+	operation := db.DbOperation{DbOperationType: db.Put, Key: []byte(m_key), Value: buf.Bytes()}
+	operationChannel <- operation
+	result := <-resultChannel
+	//fmt.Println(string(result.Result[0]))
+	b := bytes.NewBuffer(result.Result[0])
+	var inst catalog.TableCatalog
+	_ = msgp.Decode(b, &inst)
+	fmt.Println(string(inst.TableName))
+	for k := range inst.ColumnsMap {
+		fmt.Println(k)
+	}
+	if result.Err != nil {
+		return errors.New("update table error!")
+	}
 
 	return nil
 }

@@ -2,6 +2,7 @@ package db
 
 import (
 	"github.com/syndtr/goleveldb/leveldb"
+	"github.com/syndtr/goleveldb/leveldb/util"
 )
 
 type DbOperationTag = int
@@ -11,6 +12,7 @@ const (
 	GetOne
 	GetBatch
 	Delete
+	GetBatchWithPrefix
 )
 
 type DbResult []byte
@@ -56,7 +58,14 @@ func RunDb(operationChannel <-chan DbOperation, resultChannel chan<- DbResultBat
 				result.Result = append(result.Result, DbResult(data))
 				resultChannel <- result
 			}
-
+		case GetBatchWithPrefix:
+			iter := db.NewIterator(util.BytesPrefix(operation.Key), nil)
+			for iter.Next() {
+				result.Result = append(result.Result, DbResult(iter.Value()))
+				result.Cnt++
+			}
+			iter.Release()
+			resultChannel <- result
 		}
 
 	}

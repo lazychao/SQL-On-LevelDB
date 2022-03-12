@@ -3,6 +3,7 @@
 package main
 
 import (
+	"SQL-On-LevelDB/src/utils"
 	"fmt"
 
 	"github.com/syndtr/goleveldb/leveldb"
@@ -12,10 +13,20 @@ func main() {
 	db, _ := leveldb.OpenFile("data/testdb", nil) //打开一个数据库,不存在就自动创建
 	//这是相对路径
 	defer db.Close()
-	db.Put([]byte("peop"), []byte("value1"), nil)
-	db.Put([]byte("people2"), []byte("value2"), nil)
-	db.Put([]byte("people3"), []byte("value3"), nil)
-	db.Put([]byte("people4"), []byte("value4"), nil)
+	// db.Put([]byte("peop"), []byte("value1"), nil)
+	// db.Put([]byte("people2"), []byte("value2"), nil)
+	// db.Put([]byte("people3"), []byte("value3"), nil)
+	// db.Put([]byte("people4"), []byte("value4"), nil)
+	//遍历数据库
+	// i := 0
+	// iter := db.NewIterator(nil, nil)
+	// for iter.Next() {
+	// 	i++
+	// 	fmt.Printf("[%s]:%s\n", iter.Key(), iter.Value())
+	// }
+	// iter.Release()
+	// fmt.Print(i)
+
 	//根据前缀查找
 	// iter := db.NewIterator(util.BytesPrefix([]byte("people")), nil)
 	// for iter.Next() {
@@ -29,8 +40,8 @@ func main() {
 	// 	fmt.Printf("[%s]:%s\n", iter.Key(), iter.Value())
 	// }
 	// iter.Release()
-	//data, _ := db.Get([]byte("key"), nil) //data是字节切片
-	//fmt.Print(data)
-	data, err := db.Get([]byte("how"), nil)
+	key := []byte("r_people_")
+	key = append(key, utils.IntToBytes(0)...)
+	data, err := db.Get([]byte(key), nil)
 	fmt.Println(data, err)
 }

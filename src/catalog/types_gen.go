@@ -951,6 +951,7 @@ func (z Key) Msgsize() (s int) {
 	return
 }
 
+/*
 // DecodeMsg implements msgp.Decodable
 func (z *KeyOrder) DecodeMsg(dc *msgp.Reader) (err error) {
 	{
@@ -1158,7 +1159,7 @@ func (z ScalarColumnTypeTag) Msgsize() (s int) {
 	s = msgp.IntSize
 	return
 }
-
+*/
 // DecodeMsg implements msgp.Decodable
 func (z *TableCatalog) DecodeMsg(dc *msgp.Reader) (err error) {
 	var field []byte
@@ -1928,3 +1929,162 @@ func (z TableCatalogMap) Msgsize() (s int) {
 	}
 	return
 }
+
+/*
+// DecodeMsg implements msgp.Decodable
+func (z *UniquesColumn) DecodeMsg(dc *msgp.Reader) (err error) {
+	var field []byte
+	_ = field
+	var zb0001 uint32
+	zb0001, err = dc.ReadMapHeader()
+	if err != nil {
+		err = msgp.WrapError(err)
+		return
+	}
+	for zb0001 > 0 {
+		zb0001--
+		field, err = dc.ReadMapKeyPtr()
+		if err != nil {
+			err = msgp.WrapError(err)
+			return
+		}
+		switch msgp.UnsafeString(field) {
+		case "ColumnName":
+			z.ColumnName, err = dc.ReadString()
+			if err != nil {
+				err = msgp.WrapError(err, "ColumnName")
+				return
+			}
+		case "Value":
+			err = z.Value.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "Value")
+				return
+			}
+		case "HasIndex":
+			z.HasIndex, err = dc.ReadBool()
+			if err != nil {
+				err = msgp.WrapError(err, "HasIndex")
+				return
+			}
+		default:
+			err = dc.Skip()
+			if err != nil {
+				err = msgp.WrapError(err)
+				return
+			}
+		}
+	}
+	return
+}
+
+// EncodeMsg implements msgp.Encodable
+func (z *UniquesColumn) EncodeMsg(en *msgp.Writer) (err error) {
+	// map header, size 3
+	// write "ColumnName"
+	err = en.Append(0x83, 0xaa, 0x43, 0x6f, 0x6c, 0x75, 0x6d, 0x6e, 0x4e, 0x61, 0x6d, 0x65)
+	if err != nil {
+		return
+	}
+	err = en.WriteString(z.ColumnName)
+	if err != nil {
+		err = msgp.WrapError(err, "ColumnName")
+		return
+	}
+	// write "Value"
+	err = en.Append(0xa5, 0x56, 0x61, 0x6c, 0x75, 0x65)
+	if err != nil {
+		return
+	}
+	err = z.Value.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "Value")
+		return
+	}
+	// write "HasIndex"
+	err = en.Append(0xa8, 0x48, 0x61, 0x73, 0x49, 0x6e, 0x64, 0x65, 0x78)
+	if err != nil {
+		return
+	}
+	err = en.WriteBool(z.HasIndex)
+	if err != nil {
+		err = msgp.WrapError(err, "HasIndex")
+		return
+	}
+	return
+}
+
+// MarshalMsg implements msgp.Marshaler
+func (z *UniquesColumn) MarshalMsg(b []byte) (o []byte, err error) {
+	o = msgp.Require(b, z.Msgsize())
+	// map header, size 3
+	// string "ColumnName"
+	o = append(o, 0x83, 0xaa, 0x43, 0x6f, 0x6c, 0x75, 0x6d, 0x6e, 0x4e, 0x61, 0x6d, 0x65)
+	o = msgp.AppendString(o, z.ColumnName)
+	// string "Value"
+	o = append(o, 0xa5, 0x56, 0x61, 0x6c, 0x75, 0x65)
+	o, err = z.Value.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "Value")
+		return
+	}
+	// string "HasIndex"
+	o = append(o, 0xa8, 0x48, 0x61, 0x73, 0x49, 0x6e, 0x64, 0x65, 0x78)
+	o = msgp.AppendBool(o, z.HasIndex)
+	return
+}
+
+// UnmarshalMsg implements msgp.Unmarshaler
+func (z *UniquesColumn) UnmarshalMsg(bts []byte) (o []byte, err error) {
+	var field []byte
+	_ = field
+	var zb0001 uint32
+	zb0001, bts, err = msgp.ReadMapHeaderBytes(bts)
+	if err != nil {
+		err = msgp.WrapError(err)
+		return
+	}
+	for zb0001 > 0 {
+		zb0001--
+		field, bts, err = msgp.ReadMapKeyZC(bts)
+		if err != nil {
+			err = msgp.WrapError(err)
+			return
+		}
+		switch msgp.UnsafeString(field) {
+		case "ColumnName":
+			z.ColumnName, bts, err = msgp.ReadStringBytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "ColumnName")
+				return
+			}
+		case "Value":
+			bts, err = z.Value.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "Value")
+				return
+			}
+		case "HasIndex":
+			z.HasIndex, bts, err = msgp.ReadBoolBytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "HasIndex")
+				return
+			}
+		default:
+			bts, err = msgp.Skip(bts)
+			if err != nil {
+				err = msgp.WrapError(err)
+				return
+			}
+		}
+	}
+	o = bts
+	return
+}
+
+// Msgsize returns an upper bound estimate of the number of bytes occupied by the serialized message
+func (z *UniquesColumn) Msgsize() (s int) {
+	s = 1 + 11 + msgp.StringPrefixSize + len(z.ColumnName) + 6 + z.Value.Msgsize() + 9 + msgp.BoolSize
+	return
+}
+*/

@@ -9,8 +9,10 @@ require (
 
 require (
 	github.com/golang/snappy v0.0.0-20180518054509-2e65f85255db // indirect
-	github.com/mattn/go-runewidth v0.0.9 // indirect
+	github.com/jedib0t/go-pretty/v6 v6.2.7 // indirect
+	github.com/mattn/go-runewidth v0.0.13 // indirect
 	github.com/philhofer/fwd v1.1.1 // indirect
+	github.com/rivo/uniseg v0.2.0 // indirect
 	github.com/tinylib/msgp v1.1.6 // indirect
 	golang.org/x/mod v0.5.1 // indirect
 	golang.org/x/net v0.0.0-20211015210444-4f30a5c0130f // indirect

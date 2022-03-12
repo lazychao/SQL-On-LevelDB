@@ -19,6 +19,14 @@ const historyCommmandFile = "~/.minisql_history"
 const firstPrompt = "minisql>"
 const secondPrompt = "      ->"
 
+// func InitDB() error {
+// 	err := CatalogManager.LoadDbMeta()
+// 	if err != nil {
+// 		return err
+// 	}
+
+// 	return nil
+// }
 func expandPath(path string) (string, error) {
 	if strings.HasPrefix(path, "~/") {
 		parts := strings.SplitN(path, "/", 2)
