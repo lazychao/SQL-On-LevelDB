@@ -24,7 +24,18 @@ func newLexerWrapper(li *lexer.LexerImpl, channel chan<- types.DStatements) *lex
 func (l *lexerWrapper) Lex(lval *yySymType) int { //和词法分析器的Lex不一样,,,参数是一个指针
 	r, err := l.impl.Lex(lval.LastToken) //执行的是词法分析器的Lex，读取一个终结符
 	if err != nil {
-		log.Fatal(err)
+		//log.Fatal(err) //直接就退出了整个程序
+		/*
+			整个应用程序马上退出。
+			defer函数不会执行。
+		*/
+		//改成Panic
+		log.Panic(err)
+		/*
+			该函数会退出，defer会执行
+			recover 可以中止 panic 造成的程序崩溃。
+			就和java的exception catch一样
+		*/
 	}
 	l.lastLiteral = r.Literal
 	tokVal := r.Token

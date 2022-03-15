@@ -61,10 +61,16 @@ func RunDb(operationChannel <-chan DbOperation, resultChannel chan<- DbResultBat
 		case GetBatchWithPrefix:
 			iter := db.NewIterator(util.BytesPrefix(operation.Key), nil)
 			for iter.Next() {
-				result.Result = append(result.Result, DbResult(iter.Value()))
+				//分配一块空间，如果直接用iter的话，会出错，最后只拿到同一个
+				bytes := make([]byte, len(iter.Value()))
+				copy(bytes, iter.Value())
+				result.Result = append(result.Result, DbResult(bytes))
+				//fmt.Println(iter.Value())
 				result.Cnt++
 			}
 			iter.Release()
+			// fmt.Println(result.Result[0])
+			// fmt.Println(result.Result[1])
 			resultChannel <- result
 		}
 

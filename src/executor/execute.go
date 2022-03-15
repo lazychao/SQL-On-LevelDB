@@ -20,7 +20,7 @@ import (
 func Execute(dataChannel <-chan types.DStatements, finishChannel chan<- error, operationChannel chan<- db.DbOperation, resultChannel <-chan db.DbResultBatch) {
 	var err Error.Error
 	mapping.SetDbChannel(operationChannel, resultChannel)
-	mapping.SetFinishChannel(finishChannel)
+
 	for statement := range dataChannel {
 		//fmt.Println(statement)
 		switch statement.GetOperationType() {
@@ -32,14 +32,31 @@ func Execute(dataChannel <-chan types.DStatements, finishChannel chan<- error, o
 			} else {
 				fmt.Printf("create table succes.\n")
 			}
-
+			finishChannel <- nil
 			//fmt.Println(err)
 
 		case types.Insert:
 			err = InsertTableAPI(statement.(types.InsertStament))
-
+			if !err.Status {
+				fmt.Println(err.ErrorHint)
+			} else {
+				fmt.Printf("insert succes.\n")
+			}
+			finishChannel <- nil
 		case types.Select:
 			err = SelectAPI(statement.(types.SelectStatement))
+			if !err.Status {
+				fmt.Println(err.ErrorHint)
+			}
+			finishChannel <- nil
+			// case types.Delete:
+			// 	err = DeleteTableAPI(statement.(types.DeleteStament))
+			// 	if !err.Status {
+			// 		fmt.Println(err.ErrorHint)
+			// 	} else {
+			// 		fmt.Printf("delete succes.\n")
+			// 	}
+			// 	finishChannel<-nil
 		}
 
 	}
@@ -94,27 +111,43 @@ func SelectAPI(statement types.SelectStatement) Error.Error {
 	// }
 	//先默认不走索引吧
 	err, rows = mapping.SelectRecord(table, statement.Fields.ColumnNames, statement.Where)
+	if err != nil {
+		return Error.CreateFailError(err)
+	}
+
+	if statement.Fields.SelectAll {
+		selectcolumn := make([]string, len(table.ColumnsMap))
+		for name, column := range table.ColumnsMap {
+			//是无序的啊啊啊啊啊
+			selectcolumn[column.ColumnPos] = name
+		}
+		PrintTable(statement.TableNames[0], selectcolumn, rows) //very dirty  but I have no other choose
+	} else {
+		PrintTable(statement.TableNames[0], statement.Fields.ColumnNames, rows)
+	}
+	return Error.CreateSuccessError()
 }
 
-func PrintTable(tableName string, columnName value.Row, records []value.Row) error {
+func PrintTable(tableName string, columnName []string, records []value.Row) error {
 	t := table.NewWriter()
 	t.SetOutputMirror(os.Stdout)
-	totalHeader := make([]interface{}, 0, len(columnName.Values)+1)
+	totalHeader := make([]interface{}, 0, len(columnName)+1)
 	totalHeader = append(totalHeader, tableName)
-	for _, item := range columnName.Values {
-		totalHeader = append(totalHeader, item.String())
+	for _, item := range columnName {
+		totalHeader = append(totalHeader, item)
 	}
 	t.SetStyle(table.StyleColoredBright)
 	t.AppendHeader(totalHeader)
-	columnNum := len(columnName.Values)
+	columnNum := len(columnName)
 
 	Rows := make([]table.Row, 0, len(records)+1)
 
 	for i, item := range records {
 		newRow := make([]interface{}, 0, columnNum+1)
-		newRow = append(newRow, strconv.Itoa(i))
+		newRow = append(newRow, strconv.Itoa(i+1))
 		for _, col := range item.Values {
 			newRow = append(newRow, col.String())
+			// fmt.Print(col.String() + " ")
 		}
 		Rows = append(Rows, newRow)
 	}

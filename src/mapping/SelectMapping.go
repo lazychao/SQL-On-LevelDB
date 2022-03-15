@@ -8,6 +8,7 @@ import (
 	"SQL-On-LevelDB/src/utils"
 	"bytes"
 	"errors"
+	"fmt"
 
 	"github.com/tinylib/msgp/msgp"
 )
@@ -16,7 +17,6 @@ func SelectGetTableCatalog(tableName string) (*catalog.TableCatalog, error) {
 	value := GetOne([]byte("m_" + tableName))
 	if value == nil {
 		err := errors.New("select table error:this table doesnot exist")
-		finishChannel <- err
 		return nil, err
 	}
 	b := bytes.NewBuffer(value)
@@ -28,13 +28,16 @@ func SelectRecord(table *catalog.TableCatalog, columns []string, where *types.Wh
 	ret := []value.Row{}
 	colPos := getColPos(table, where)
 	//构造前缀
+	fmt.Println(table.RecordNo)
 	prefix := "r_" + table.TableName + "_"
 	operation := db.DbOperation{DbOperationType: db.GetBatchWithPrefix, Key: []byte(prefix), Value: []byte("")}
 	operationChannel <- operation
 	//得到结果
 	result := <-resultChannel
 	for _, rowbytes := range result.Result {
+		//fmt.Println(rowbytes)
 		decodedRow := decode([]byte(rowbytes), table) //将行从字节解码回value
+
 		//where筛选
 		if flag, err := checkRow(decodedRow, where, colPos); err != nil || flag == false {
 			if err != nil {
@@ -46,6 +49,7 @@ func SelectRecord(table *catalog.TableCatalog, columns []string, where *types.Wh
 		tmp, _ := columnFilter(table, decodedRow, columns)
 		ret = append(ret, tmp)
 	}
+
 	return nil, ret
 }
 func columnFilter(table *catalog.TableCatalog, record value.Row, columns []string) (value.Row, error) {
@@ -79,6 +83,7 @@ func decode(bytes []byte, table *catalog.TableCatalog) value.Row {
 	}
 	record := value.Row{Values: make([]value.Value, len(table.ColumnsMap))}
 	for _, column := range table.ColumnsMap {
+		//这里不用range给的索引是因为，map的迭代是无固定顺序的，这个索引是不可以用的
 		startpos := column.StartBytesPos
 		length := column.Type.Length
 		tag := column.Type.TypeTag
@@ -87,7 +92,9 @@ func decode(bytes []byte, table *catalog.TableCatalog) value.Row {
 			tag = catalog.Null
 		}
 		record.Values[column.ColumnPos], _ = value.Byte2Value(bytes[startpos:], tag, length)
+		//fmt.Print(record.Values[column.ColumnPos].String() + " ")
 	}
+	//fmt.Println(" ")
 	return record
 }
 

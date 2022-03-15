@@ -15,8 +15,7 @@ import (
 	"github.com/peterh/liner"
 )
 
-const historyCommmandFile = "~/.minisql_history"
-const firstPrompt = "minisql>"
+const firstPrompt = "sql->"
 const secondPrompt = "      ->"
 
 // func InitDB() error {
@@ -27,24 +26,23 @@ const secondPrompt = "      ->"
 
 // 	return nil
 // }
-func expandPath(path string) (string, error) {
-	if strings.HasPrefix(path, "~/") {
-		parts := strings.SplitN(path, "/", 2)
-		home, err := os.UserHomeDir()
-		if err != nil {
-			return "", err
-		}
-		return filepath.Join(home, parts[1]), nil
-	}
-	return path, nil
-}
+// func expandPath(path string) (string, error) {
+// 	if strings.HasPrefix(path, "~/") {
+// 		parts := strings.SplitN(path, "/", 2)
+// 		home, err := os.UserHomeDir()
+// 		if err != nil {
+// 			return "", err
+// 		}
+// 		return filepath.Join(home, parts[1]), nil
+// 	}
+// 	return path, nil
+// }
 func loadHistoryCommand() (*os.File, error) {
 	var file *os.File
-	path, err := expandPath(historyCommmandFile)
-	if err != nil {
-		return nil, err
-	}
-	_, err = os.Stat(path)
+	wd, _ := os.Getwd() //获取当前路径
+	path := filepath.Join(wd, ".sql_history")
+
+	_, err := os.Stat(path)
 	if os.IsNotExist(err) {
 		file, err = os.Create(path)
 		if err != nil {
@@ -90,21 +88,17 @@ func loadHistoryCommand() (*os.File, error) {
 // 	close(output)
 // }
 
-func runShell(r chan<- error) {
+func main() {
 	ll := liner.NewLiner()
+
 	defer ll.Close()
+
 	ll.SetCtrlCAborts(true)
 	file, err := loadHistoryCommand()
 	if err != nil {
 		panic(err)
 	}
-	defer func() {
-		_, err := ll.WriteHistory(file)
-		if err != nil {
-			panic(err)
-		}
-		_ = file.Close()
-	}()
+
 	s := bufio.NewScanner(file)
 	for s.Scan() {
 		//fmt.Println(s.Text())
@@ -112,10 +106,23 @@ func runShell(r chan<- error) {
 		ll.AppendHistory(s.Text())
 	}
 
-	StatementChannel := make(chan types.DStatements, 500)                                   //用于传输操作指令通道
-	FinishChannel := make(chan error, 500)                                                  //用于api执行完成反馈通道
-	OperationChannel := make(chan db.DbOperation, 500)                                      //用于传输数据库操作
-	DbResultChannel := make(chan db.DbResultBatch, 500)                                     //用于传输数据库结果
+	StatementChannel := make(chan types.DStatements, 500) //用于传输操作指令通道
+	FinishChannel := make(chan error, 500)                //用于api执行完成反馈通道
+	OperationChannel := make(chan db.DbOperation, 500)    //用于传输数据库操作
+	DbResultChannel := make(chan db.DbResultBatch, 500)
+
+	defer func() {
+		_, err := ll.WriteHistory(file)
+		if err != nil {
+			panic(err)
+		}
+		_ = file.Close()
+		close(StatementChannel)
+		close(FinishChannel)
+		close(OperationChannel)
+		fmt.Println("bye")
+	}()
+	//用于传输数据库结果
 	go executor.Execute(StatementChannel, FinishChannel, OperationChannel, DbResultChannel) //begin the runtime for exec
 	go db.RunDb(OperationChannel, DbResultChannel)
 	var beginSQLParse = false
@@ -143,10 +150,6 @@ func runShell(r chan<- error) {
 				//检测是否是要退出
 				if !beginSQLParse && (trimInput == "exit" || strings.HasPrefix(trimInput, "exit;")) {
 					//main函数退出
-					close(StatementChannel)
-					close(FinishChannel)
-					close(OperationChannel)
-					r <- err
 					return
 				}
 				//要用字节切片来append，不能用字符串，因为字符串不可修改
@@ -162,7 +165,8 @@ func runShell(r chan<- error) {
 		beginTime := time.Now()
 		//执行解析，解析结果放在StatementChannel
 		err = parser.Parse(strings.NewReader(string(sqlText)), StatementChannel)
-		//fmt.Println(string(sqlText))
+		// err = parser.Parse(strings.NewReader(string(sqlText)), StatementChannel)
+		// //fmt.Println(string(sqlText))
 		if err != nil {
 			fmt.Println(err)
 			continue
@@ -172,15 +176,4 @@ func runShell(r chan<- error) {
 		fmt.Println("Finish operation at: ", durationTime)
 	}
 
-}
-func main() {
-	//errChan 用于接收shell返回的err
-	errChan := make(chan error)
-	go runShell(errChan) //开启shell协程
-
-	err := <-errChan
-	fmt.Println("bye")
-	if err != nil {
-		fmt.Println(err)
-	}
 }

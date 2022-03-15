@@ -12,13 +12,8 @@ import (
 
 var operationChannel chan<- db.DbOperation
 var resultChannel <-chan db.DbResultBatch
-var finishChannel chan<- error
 
 //var result db.DbResultBatch
-
-func SetFinishChannel(channel chan<- error) {
-	finishChannel = channel
-}
 
 /*
 type Column struct {
@@ -81,7 +76,7 @@ func CreateTable(tablecatalog *catalog.TableCatalog) error {
 	value := GetOne([]byte(m_key))
 	if value != nil {
 		err := errors.New("create table error:this table already exists")
-		finishChannel <- err
+
 		return err
 	}
 	var buf bytes.Buffer
@@ -101,7 +96,6 @@ func CreateTable(tablecatalog *catalog.TableCatalog) error {
 	for k := range inst.ColumnsMap {
 		fmt.Println(k)
 	}
-	finishChannel <- result.Err
 
 	return nil
 }
@@ -120,12 +114,12 @@ func UpdateTable(tablecatalog *catalog.TableCatalog) error {
 	b := bytes.NewBuffer(result.Result[0])
 	var inst catalog.TableCatalog
 	_ = msgp.Decode(b, &inst)
-	fmt.Println(string(inst.TableName))
-	for k := range inst.ColumnsMap {
-		fmt.Println(k)
-	}
+	// fmt.Println(string(inst.TableName))
+	// for k := range inst.ColumnsMap {
+	// 	fmt.Println(k)
+	// }
 	if result.Err != nil {
-		return errors.New("update table error!")
+		return errors.New("update table error!\n")
 	}
 
 	return nil

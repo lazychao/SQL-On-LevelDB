@@ -35,6 +35,14 @@ const (
 )
 
 type Column struct {
+
+	/*
+		for name, column := range table.ColumnsMap {
+				//map遍历是无序的啊啊啊啊啊
+				selectcolumn[column.ColumnPos]=column
+			}
+		得到所有的列名，顺序是定义表时的顺序
+	*/
 	Name          string
 	Type          ColumnType
 	Unique        bool

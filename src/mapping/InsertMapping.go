@@ -16,7 +16,7 @@ func InsertGetTableCatalog(tableName string) (*catalog.TableCatalog, error) {
 	value := GetOne([]byte("m_" + tableName))
 	if value == nil {
 		err := errors.New("insert table error:this table doesnot exist")
-		finishChannel <- err
+
 		return nil, err
 	}
 	b := bytes.NewBuffer(value)
@@ -81,6 +81,6 @@ func InsertRecord(table *catalog.TableCatalog, colPos []int, startBytePos []int,
 	if err != nil {
 		return err
 	}
-	finishChannel <- err
+
 	return nil
 }
