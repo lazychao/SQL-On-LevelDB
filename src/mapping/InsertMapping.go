@@ -25,7 +25,7 @@ func InsertGetTableCatalog(tableName string) (*catalog.TableCatalog, error) {
 	return &inst, nil
 }
 func InsertRecord(table *catalog.TableCatalog, colPos []int, startBytePos []int, values []value.Value, uniquescolumns []catalog.UniquesColumn) error {
-	//检查unique的数据项是否重复
+	//TODO 检查unique的数据项是否重复，实际上是执行select(走索引)，如果select出来的rownum不为0就是重复了
 	// for _, item := range uniquescolumns {
 
 	// }
@@ -65,9 +65,10 @@ func InsertRecord(table *catalog.TableCatalog, colPos []int, startBytePos []int,
 	for _, item := range uniquescolumns {
 		s = "i_" + table.TableName + "_" + item.ColumnName + "_"
 		i_key := []byte(s)
-		value, _ := item.Value.Convert2Bytes()
+		value, _ := item.Value.Convert2BytesComparable()
 		i_key = append(i_key, value...)
-		operation := db.DbOperation{DbOperationType: db.Put, Key: i_key, Value: utils.IntToBytes(table.RecordNo)}
+		i_key = append(i_key, utils.IntToBytes(table.RecordNo)...)
+		operation := db.DbOperation{DbOperationType: db.Put, Key: i_key}
 		operationChannel <- operation
 		<-resultChannel
 	}

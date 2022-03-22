@@ -126,36 +126,53 @@ func InsertCheck(statement types.InsertStament) (*catalog.TableCatalog, []int, [
 
 	return table, columnPositions, startBytePos, uniquecolumns, nil
 }
-func SelectCheck(statement types.SelectStatement) (error, *types.ComparisonExprLSRV, *catalog.TableCatalog) {
+func SelectCheck(statement types.SelectStatement) (error, string, *catalog.TableCatalog) {
 	//先检查table在不在，获取其catalog
 	var ok bool
-	table, err := mapping.InsertGetTableCatalog(statement.TableNames[0])
+	table, err := mapping.SelectGetTableCatalog(statement.TableNames[0])
 	if err != nil {
-		return errors.New("don't have a table named " + statement.TableNames[0]), nil, nil
+		return errors.New("don't have a table named " + statement.TableNames[0]), "", nil
 	}
-	var exprLSRV *types.ComparisonExprLSRV
-	err, exprLSRV = whereOptCheck(statement.Where, table)
+	var indexcolumn string
+	err, indexcolumn = whereOptCheck(statement.Where, table)
 	if err != nil {
-		return err, nil, nil
+		return err, "", nil
 	}
 	if statement.Fields.SelectAll {
-		return nil, exprLSRV, table
+		return nil, indexcolumn, table
 	}
 	//检测一下select 的field 属性是不是合法
 	for _, item := range statement.Fields.ColumnNames {
 		if _, ok = table.ColumnsMap[item]; !ok {
-			return errors.New("don't have a column named " + item), nil, nil
+			return errors.New("don't have a column named " + item), "", nil
 		}
 	}
-	return nil, exprLSRV, table
+	return nil, indexcolumn, table
+
+}
+func DeleteCheck(statement types.DeleteStatement) (error, string, *catalog.TableCatalog) {
+	//先检查table在不在，获取其catalog
+
+	table, err := mapping.DeleteGetTableCatalog(statement.TableName)
+	if err != nil {
+		return errors.New("don't have a table named " + statement.TableName), "", nil
+	}
+	var indexcolumn string
+	//检查where表达式的列是否都存在，并返回最优索引
+	err, indexcolumn = whereOptCheck(statement.Where, table)
+	if err != nil {
+		return err, "", nil
+	}
+
+	return nil, indexcolumn, table
 
 }
 
 //whereOptCheck 用来查找有没有方便走的索引
 //1.检测属性列合法 2.选择一个属性走索引 最好是等值的，都不是等值的，就找数据类型简单的
-func whereOptCheck(where *types.Where, table *catalog.TableCatalog) (error, *types.ComparisonExprLSRV) {
+func whereOptCheck(where *types.Where, table *catalog.TableCatalog) (error, string) {
 	if where == nil {
-		return nil, nil
+		return nil, ""
 	}
 	columnNames := where.Expr.GetTargetCols()
 	indexList := table.Indexs
@@ -163,7 +180,7 @@ func whereOptCheck(where *types.Where, table *catalog.TableCatalog) (error, *typ
 	//检测where里属性列是否合法
 	for _, item := range columnNames {
 		if _, ok = table.ColumnsMap[item]; !ok {
-			return errors.New("dont have a column named " + item), nil
+			return errors.New("dont have a column named " + item), ""
 		}
 
 	}
@@ -175,7 +192,7 @@ func whereOptCheck(where *types.Where, table *catalog.TableCatalog) (error, *typ
 				bestExpr = exprIndex
 			} else if bestExpr != nil && exprIndex != nil && bestExpr.Operator != value.Equal && exprIndex.Operator == value.Equal { //有等值索引优先使用
 				bestExpr = exprIndex
-			} else if bestExpr != nil && exprIndex != nil { //都是不等索引或者都是等值索引
+			} else if bestExpr != nil && exprIndex != nil { //都是比较索引或者都是等值索引
 				bestType := table.ColumnsMap[bestExpr.Left].Type.TypeTag
 				nowType := table.ColumnsMap[indexItem.Keys[0].Name].Type.TypeTag
 				switch bestType {
@@ -195,5 +212,8 @@ func whereOptCheck(where *types.Where, table *catalog.TableCatalog) (error, *typ
 			}
 		}
 	}
-	return nil, bestExpr
+	if bestExpr == nil {
+		return nil, ""
+	}
+	return nil, bestExpr.Left
 }

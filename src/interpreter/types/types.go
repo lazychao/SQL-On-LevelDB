@@ -244,6 +244,14 @@ func (s ExecFileStatement) Show() {
 
 }
 
+type Point struct {
+	Val     value.Value
+	Include bool
+}
+type Range struct {
+	Begin *Point
+	End   *Point
+}
 type (
 	//Where is the type for where func which maybe nil!
 	Where struct {
@@ -256,6 +264,8 @@ type (
 		GetTargetColsNum() int
 		//GetIndexExpr input a index column name, and find whether have a name same as index
 		GetIndexExpr(string) (bool, *ComparisonExprLSRV)
+		//GetRange input a index column name,and compute the index data range
+		GetRange(indexName string) (bool, *Range)
 	}
 	//ComparisonExprLSRV left string right value
 	//比较有四种情况，列名 compareOp 值，列名 op 列名，值 op 值，值 op 列名
@@ -340,9 +350,39 @@ func (e *ComparisonExprLSRV) GetTargetColsNum() int {
 func (e *ComparisonExprLSRV) Debug() {
 	fmt.Println(e.Left, e.Operator, e.Right.String())
 }
+
+//传入一个列，得到对应的索引表达式LSRV
 func (e *ComparisonExprLSRV) GetIndexExpr(indexName string) (bool, *ComparisonExprLSRV) {
 	if e.Left == indexName && e.Operator != value.NotEqual {
 		return true, &ComparisonExprLSRV{Left: e.Left, Operator: e.Operator, Right: e.Right}
+	}
+	return false, nil
+}
+func (e *ComparisonExprLSRV) GetRange(indexName string) (bool, *Range) {
+	if e.Left == indexName {
+		switch e.Operator {
+		case value.Equal:
+			begin := Point{Val: e.Right, Include: true}
+			end := Point{Val: e.Right, Include: true}
+			return true, &Range{Begin: &begin, End: &end}
+		case value.Less:
+			begin := Point{Val: value.Null{Length: 0}, Include: false}
+			end := Point{Val: e.Right, Include: false}
+			return true, &Range{Begin: &begin, End: &end}
+		case value.LessEqual:
+			begin := Point{Val: value.Null{Length: 0}, Include: false}
+			end := Point{Val: e.Right, Include: true}
+			return true, &Range{Begin: &begin, End: &end}
+		case value.Great:
+			begin := Point{Val: e.Right, Include: false}
+			end := Point{Val: value.Null{Length: 0}, Include: false}
+			return true, &Range{Begin: &begin, End: &end}
+		case value.GreatEqual:
+			begin := Point{Val: e.Right, Include: true}
+			end := Point{Val: value.Null{Length: 0}, Include: false}
+			return true, &Range{Begin: &begin, End: &end}
+		}
+
 	}
 	return false, nil
 }
@@ -385,7 +425,34 @@ func (e *ComparisonExprLVRS) GetIndexExpr(indexName string) (bool, *ComparisonEx
 	}
 	return false, nil
 }
+func (e *ComparisonExprLVRS) GetRange(indexName string) (bool, *Range) {
+	if e.Right == indexName {
+		switch e.Operator {
+		case value.Equal:
+			begin := Point{Val: e.Left, Include: true}
+			end := Point{Val: e.Left, Include: true}
+			return true, &Range{Begin: &begin, End: &end}
+		case value.Great:
+			begin := Point{Val: value.Null{Length: 0}, Include: false}
+			end := Point{Val: e.Left, Include: false}
+			return true, &Range{Begin: &begin, End: &end}
+		case value.GreatEqual:
+			begin := Point{Val: value.Null{Length: 0}, Include: false}
+			end := Point{Val: e.Left, Include: true}
+			return true, &Range{Begin: &begin, End: &end}
+		case value.Less:
+			begin := Point{Val: e.Left, Include: false}
+			end := Point{Val: value.Null{Length: 0}, Include: false}
+			return true, &Range{Begin: &begin, End: &end}
+		case value.LessEqual:
+			begin := Point{Val: e.Left, Include: true}
+			end := Point{Val: value.Null{Length: 0}, Include: false}
+			return true, &Range{Begin: &begin, End: &end}
+		}
 
+	}
+	return false, nil
+}
 func (e *ComparisonExprLVRV) Evaluate(row []value.Value) (bool, error) {
 	return e.Left.SafeCompare(e.Right, e.Operator)
 }
@@ -401,7 +468,10 @@ func (e *ComparisonExprLVRV) Debug() {
 func (e *ComparisonExprLVRV) GetIndexExpr(indexName string) (bool, *ComparisonExprLSRV) {
 	return false, nil
 }
+func (e *ComparisonExprLVRV) GetRange(indexName string) (bool, *Range) {
 
+	return false, nil
+}
 func (e *ComparisonExprLSRS) Evaluate(row []value.Value) (bool, error) {
 	vall := row[0]
 	valr := row[1]
@@ -438,7 +508,9 @@ func (e *ComparisonExprLSRS) Debug() {
 func (e *ComparisonExprLSRS) GetIndexExpr(indexName string) (bool, *ComparisonExprLSRV) {
 	return false, nil
 }
-
+func (e *ComparisonExprLSRS) GetRange(indexName string) (bool, *Range) {
+	return false, nil
+}
 func (e *AndExpr) Evaluate(row []value.Value) (bool, error) {
 	leftOk, err := e.Left.Evaluate(row[0:e.LeftNum])
 	if err != nil {
@@ -465,18 +537,39 @@ func (e *AndExpr) Debug() {
 	fmt.Println(" and ")
 	e.Right.Debug()
 }
+
+//也是传入一个列名，得到一个对应的索引表达式LSRV，但其实可能有多个。。
+//也可以写个函数，把这个列的所有表达式都找出来，然后计算区间
 func (e *AndExpr) GetIndexExpr(indexName string) (bool, *ComparisonExprLSRV) {
 	b, c := e.Left.GetIndexExpr(indexName)
-	if b == true {
+	if b {
 		b1, c1 := e.Right.GetIndexExpr(indexName)
-		if b1 == true && c1 != nil && c1.Operator == value.Equal {
+		if b1 && c1 != nil && c1.Operator == value.Equal {
 			return true, c1
 		}
 		return b, c
 	}
 	return e.Right.GetIndexExpr(indexName)
 }
-
+func (e *AndExpr) GetRange(indexName string) (bool, *Range) {
+	f1, rangee1 := e.Left.GetRange(indexName)
+	f2, rangee2 := e.Right.GetRange(indexName)
+	if f1 && f2 {
+		rangee := AndRange(rangee1, rangee2)
+		if rangee == nil {
+			//区间为空
+			return true, nil
+		}
+		return true, rangee
+	} else if !f1 && !f2 {
+		//should not enter this branch in final phase
+		return false, nil
+	} else if !f1 && f2 {
+		return true, rangee2
+	} else {
+		return true, rangee1
+	}
+}
 func (e *OrExpr) Evaluate(row []value.Value) (bool, error) {
 	leftOk, err := e.Left.Evaluate(row[0:e.LeftNum])
 	if err != nil {
@@ -508,7 +601,10 @@ func (e *OrExpr) Debug() {
 func (e *OrExpr) GetIndexExpr(indexName string) (bool, *ComparisonExprLSRV) {
 	return false, nil
 }
-
+func (e *OrExpr) GetRange(indexName string) (bool, *Range) {
+	//shouldnot enter this function
+	return false, nil
+}
 func (e *NotExpr) Evaluate(row []value.Value) (bool, error) {
 	ok, err := e.Expr.Evaluate(row)
 	if err != nil {
@@ -528,6 +624,10 @@ func (e *NotExpr) Debug() {
 }
 func (e *NotExpr) GetIndexExpr(indexName string) (bool, *ComparisonExprLSRV) {
 	return e.Expr.GetIndexExpr(indexName)
+}
+func (e *NotExpr) GetRange(indexName string) (bool, *Range) {
+	//翻转区间
+	return false, nil
 }
 
 type InsertStament struct {
@@ -565,5 +665,63 @@ func (c DeleteStatement) GetOperationType() OperationType {
 	return Delete
 }
 func (c DeleteStatement) Show() {
+}
+func AndRange(rangee1 *Range, rangee2 *Range) *Range {
+	var left *Point
+	var right *Point
+	//确定左端点
+	if _, ok := rangee1.Begin.Val.(value.Null); ok {
+		left = rangee2.Begin
+	} else if _, ok := rangee2.Begin.Val.(value.Null); ok {
+		left = rangee1.Begin
+	} else {
+		if f, _ := rangee1.Begin.Val.Compare(rangee2.Begin.Val, value.Great); f {
+			left = rangee1.Begin
+		} else if f, _ := rangee2.Begin.Val.Compare(rangee1.Begin.Val, value.Great); f {
+			left = rangee2.Begin
+		} else {
+			if rangee2.Begin.Include && rangee1.Begin.Include {
+				left = rangee1.Begin
+			} else if rangee2.Begin.Include && !rangee1.Begin.Include {
+				left = rangee1.Begin
+			} else if rangee1.Begin.Include && !rangee2.Begin.Include {
+				left = rangee2.Begin
+			} else {
+				left = rangee1.Begin
+			}
+		}
+	}
 
+	//确定右端点
+	if _, ok := rangee1.End.Val.(value.Null); ok {
+		right = rangee2.End
+	} else if _, ok := rangee2.End.Val.(value.Null); ok {
+		right = rangee1.End
+	} else {
+		if f, _ := rangee1.End.Val.Compare(rangee2.End.Val, value.Less); f {
+			right = rangee1.End
+		} else if f, _ := rangee2.End.Val.Compare(rangee1.End.Val, value.Less); f {
+			right = rangee2.End
+		} else {
+			//相同值，比较
+			if rangee2.End.Include && rangee1.End.Include {
+				right = rangee1.End
+			} else if rangee2.End.Include && !rangee1.End.Include {
+				right = rangee1.End
+			} else if rangee1.End.Include && !rangee2.End.Include {
+				right = rangee2.End
+			} else {
+				right = rangee1.End
+			}
+		}
+	}
+	//右端点比左端点小
+	if f, _ := right.Val.Compare(left.Val, value.Less); f {
+		return nil
+	} else if f, _ := right.Val.Compare(left.Val, value.Equal); f {
+		if !(right.Include && left.Include) {
+			return nil
+		}
+	}
+	return &Range{Begin: left, End: right}
 }

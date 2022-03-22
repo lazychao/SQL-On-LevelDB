@@ -5,7 +5,6 @@ import (
 	"SQL-On-LevelDB/src/db"
 	"bytes"
 	"errors"
-	"fmt"
 
 	"github.com/tinylib/msgp/msgp"
 )
@@ -57,14 +56,14 @@ func SetDbChannel(channel1 chan<- db.DbOperation, channel2 <-chan db.DbResultBat
 	resultChannel = channel2
 }
 func GetOne(key []byte) []byte {
-	operation := db.DbOperation{DbOperationType: db.GetOne, Key: []byte(key), Value: []byte("")}
+	operation := db.DbOperation{DbOperationType: db.GetOne, Key: []byte(key)}
 	operationChannel <- operation
 	result := <-resultChannel
-	//fmt.Println(string(result.Result[0]))
+	//fmt.Println(string(result.Value[0]))
 	if result.Cnt == 0 {
 		return nil
 	} else {
-		return result.Result[0]
+		return result.Value[0]
 	}
 
 }
@@ -87,15 +86,16 @@ func CreateTable(tablecatalog *catalog.TableCatalog) error {
 	//fmt.Println(string(data))
 	operation := db.DbOperation{DbOperationType: db.Put, Key: []byte(m_key), Value: buf.Bytes()}
 	operationChannel <- operation
-	result := <-resultChannel
-	//fmt.Println(string(result.Result[0]))
-	b := bytes.NewBuffer(result.Result[0])
-	var inst catalog.TableCatalog
-	_ = msgp.Decode(b, &inst)
-	fmt.Println(string(inst.TableName))
-	for k := range inst.ColumnsMap {
-		fmt.Println(k)
-	}
+	<-resultChannel
+	// result := <-resultChannel
+	// //fmt.Println(string(result.Value[0]))
+	// b := bytes.NewBuffer(result.Value[0])
+	// var inst catalog.TableCatalog
+	// _ = msgp.Decode(b, &inst)
+	// fmt.Println(string(inst.TableName))
+	// for k := range inst.ColumnsMap {
+	// 	fmt.Println(k)
+	// }
 
 	return nil
 }
@@ -109,18 +109,18 @@ func UpdateTable(tablecatalog *catalog.TableCatalog) error {
 	_ = msgp.Encode(&buf, tablecatalog)
 	operation := db.DbOperation{DbOperationType: db.Put, Key: []byte(m_key), Value: buf.Bytes()}
 	operationChannel <- operation
-	result := <-resultChannel
-	//fmt.Println(string(result.Result[0]))
-	b := bytes.NewBuffer(result.Result[0])
-	var inst catalog.TableCatalog
-	_ = msgp.Decode(b, &inst)
+	<-resultChannel
+	//fmt.Println(string(result.Value[0]))
+	// b := bytes.NewBuffer(result.Value[0])
+	// var inst catalog.TableCatalog
+	// _ = msgp.Decode(b, &inst)
 	// fmt.Println(string(inst.TableName))
 	// for k := range inst.ColumnsMap {
 	// 	fmt.Println(k)
 	// }
-	if result.Err != nil {
-		return errors.New("update table error!\n")
-	}
+	// if result.Err != nil {
+	// 	return errors.New("update table error!\n")
+	// }
 
 	return nil
 }

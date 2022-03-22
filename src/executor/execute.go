@@ -57,6 +57,14 @@ func Execute(dataChannel <-chan types.DStatements, finishChannel chan<- error, o
 			// 		fmt.Printf("delete succes.\n")
 			// 	}
 			// 	finishChannel<-nil
+		case types.Delete:
+			err = DeleteAPI(statement.(types.DeleteStatement))
+			if !err.Status {
+				fmt.Println(err.ErrorHint)
+			} else {
+				fmt.Printf("delete success, %d rows are deleted.\n", err.Rows)
+			}
+			finishChannel <- nil
 		}
 
 	}
@@ -93,24 +101,38 @@ func CreateTableAPI(statement types.CreateTableStatement) Error.Error {
 	return Error.CreateSuccessError()
 }
 
+//delete from table where
+func DeleteAPI(statement types.DeleteStatement) Error.Error {
+	//check
+	err, _, table := check.DeleteCheck(statement)
+	if err != nil {
+		return Error.CreateFailError(err)
+	}
+	//执行delete
+	err, rowNum := mapping.DeleteRecord(table, statement.Where)
+	if err != nil {
+		return Error.CreateFailError(err)
+	}
+	return Error.CreateRowsError(rowNum)
+}
+
 //SELECT sel_field_list FROM table_name_list where_opt limit_opt
 func SelectAPI(statement types.SelectStatement) Error.Error {
 	//先检查有无语法错误
-	//exprLSRV是可以走索引的where表达式
-	//err, exprLSRV, table := check.SelectCheck(statement)
-	err, _, table := check.SelectCheck(statement)
+	//indexcolumn是要走的索引列
+	err, indexcolumn, table := check.SelectCheck(statement)
+	//err, _, table := check.SelectCheck(statement)
 	if err != nil {
 		return Error.CreateFailError(err)
 	}
 	var rows []value.Row
-	//exprLSRV 不为空的话，说明说有索引可以走
-	// if exprLSRV == nil {
-	// 	err, rows = RecordManager.SelectRecord(CatalogManager.GetTableCatalogUnsafe(statement.TableNames[0]), statement.Fields.ColumnNames, statement.Where)
-	// } else {
-	// 	err, rows = RecordManager.SelectRecordWithIndex(CatalogManager.GetTableCatalogUnsafe(statement.TableNames[0]), statement.Fields.ColumnNames, statement.Where, *exprLSRV)
-	// }
-	//先默认不走索引吧
-	err, rows = mapping.SelectRecord(table, statement.Fields.ColumnNames, statement.Where)
+	//indexcolumn是要走的索引列
+	if indexcolumn != "" {
+		err, rows = mapping.SelectRecordWithIndex(table, statement.Fields.ColumnNames, statement.Where, indexcolumn)
+	} else {
+		err, rows = mapping.SelectRecord(table, statement.Fields.ColumnNames, statement.Where)
+	}
+
 	if err != nil {
 		return Error.CreateFailError(err)
 	}

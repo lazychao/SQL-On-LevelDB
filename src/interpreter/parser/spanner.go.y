@@ -48,6 +48,9 @@ import (
 %token<str> ADD COLUMN SET
 %token<str> TRUE FALSE allow_commit_timestamp
 %token<empty> '(' ',' ')' ';' '*' '.'
+%left OR
+%left AND
+%left NOT
 %left <str> '='  '<' '>' LE GE NE
 %token<str> CREATE  DROP EXECFILE
 %token<str> USE DATABASE TABLE INDEX STORING
