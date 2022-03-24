@@ -67,6 +67,7 @@ func createTableCheck(statement *catalog.TableCatalog) error {
 		if item, ok := statement.ColumnsMap[keyname]; !ok {
 			return errors.New("primary key error, don't have a column name " + item.Name)
 		} else {
+			//把主键设定成了unique
 			item.Unique = true
 			item.NotNull = true
 			statement.ColumnsMap[keyname] = item
@@ -96,6 +97,6 @@ func createTableCheck(statement *catalog.TableCatalog) error {
 			})
 		}
 	}
-
+	//为主键添加索引
 	return nil
 }

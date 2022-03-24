@@ -82,6 +82,8 @@ type IndexCatalog struct {
 	Unique    bool
 	Keys      []Key
 }
+
+//用途在insert时 检查unique列是否重复，可以用来生成where，执行select with index
 type UniquesColumn struct {
 	ColumnName string
 	Value      value.Value

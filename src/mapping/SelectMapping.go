@@ -99,7 +99,7 @@ func SelectRecordWithIndex(table *catalog.TableCatalog, columns []string, where 
 	//得到要进行where比较的列
 	colPos := getColPos(table, where)
 	for _, rowbytes := range result.Value {
-		fmt.Println(rowbytes)
+		//fmt.Println(rowbytes)
 		decodedRow := decode([]byte(rowbytes), table) //将行从字节解码回value
 
 		//where筛选

@@ -20,7 +20,7 @@ import (
 func Execute(dataChannel <-chan types.DStatements, finishChannel chan<- error, operationChannel chan<- db.DbOperation, resultChannel <-chan db.DbResultBatch) {
 	var err Error.Error
 	mapping.SetDbChannel(operationChannel, resultChannel)
-
+	//关闭datachannel才能退出这个函数
 	for statement := range dataChannel {
 		//fmt.Println(statement)
 		switch statement.GetOperationType() {
@@ -32,7 +32,7 @@ func Execute(dataChannel <-chan types.DStatements, finishChannel chan<- error, o
 			} else {
 				fmt.Printf("create table succes.\n")
 			}
-			finishChannel <- nil
+
 			//fmt.Println(err)
 
 		case types.Insert:
@@ -42,13 +42,13 @@ func Execute(dataChannel <-chan types.DStatements, finishChannel chan<- error, o
 			} else {
 				fmt.Printf("insert succes.\n")
 			}
-			finishChannel <- nil
+
 		case types.Select:
 			err = SelectAPI(statement.(types.SelectStatement))
 			if !err.Status {
 				fmt.Println(err.ErrorHint)
 			}
-			finishChannel <- nil
+
 			// case types.Delete:
 			// 	err = DeleteTableAPI(statement.(types.DeleteStament))
 			// 	if !err.Status {
@@ -64,12 +64,12 @@ func Execute(dataChannel <-chan types.DStatements, finishChannel chan<- error, o
 			} else {
 				fmt.Printf("delete success, %d rows are deleted.\n", err.Rows)
 			}
-			finishChannel <- nil
 		}
-
+		finishChannel <- nil
 	}
 
 }
+
 func InsertTableAPI(statement types.InsertStament) Error.Error {
 	//先检查表是否存在，并获取catalog
 
