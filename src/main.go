@@ -147,7 +147,7 @@ func main() {
 			trimInput := strings.TrimSpace(input) //get the input without front and backend space
 			if len(trimInput) != 0 {
 				ll.AppendHistory(input)
-				//检测是否是要退出
+				//检测是否是要退f出
 				if !beginSQLParse && (trimInput == "exit" || strings.HasPrefix(trimInput, "exit;")) {
 					//main函数退出
 					return

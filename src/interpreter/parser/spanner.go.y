@@ -655,7 +655,7 @@ limit_opt:
    }
    | LIMIT int_value OFFSET int_value
    {
-      $$=types.Limit{Offset:$2, Rowcount:$4}
+      $$=types.Limit{Offset:$4, Rowcount:$2}
    }
 int_value:
   decimal_value

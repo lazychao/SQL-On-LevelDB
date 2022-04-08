@@ -40,7 +40,8 @@ func Execute(dataChannel <-chan types.DStatements, finishChannel chan<- error, o
 			if !err.Status {
 				fmt.Println(err.ErrorHint)
 			} else {
-				fmt.Printf("insert succes.\n")
+				//fmt.Printf("insert succes.%v\n", time.Now().UnixNano())
+				fmt.Println("insert succes.")
 			}
 
 		case types.Select:
@@ -136,7 +137,10 @@ func SelectAPI(statement types.SelectStatement) Error.Error {
 	if err != nil {
 		return Error.CreateFailError(err)
 	}
-
+	//limit
+	if statement.Limit.Rowcount != 0 {
+		rows = rows[statement.Limit.Offset : statement.Limit.Offset+statement.Limit.Rowcount]
+	}
 	if statement.Fields.SelectAll {
 		selectcolumn := make([]string, len(table.ColumnsMap))
 		for name, column := range table.ColumnsMap {
