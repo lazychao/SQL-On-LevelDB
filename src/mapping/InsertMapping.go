@@ -29,7 +29,7 @@ func InsertRecord(table *catalog.TableCatalog, colPos []int, startBytePos []int,
 	//TODO 检查unique的数据项是否重复，实际上是执行select(走索引)，如果select出来的rownum不为0就是重复了
 	for _, item := range uniquescolumns {
 		where := types.Where{Expr: &types.ComparisonExprLSRV{Left: item.ColumnName, Operator: value.Equal, Right: item.Value}} //构造where表达式
-		err, rows := SelectRecordWithIndex(table, make([]string, 0), &where, item.ColumnName)
+		err, rows := SelectRecordWithIndex(table, make([]string, 0), &where, item.ColumnName, types.Order{})
 		if err != nil {
 			return err
 		}

@@ -31,6 +31,7 @@ import (
   LastToken int
   expr   types.Expr
   where     *types.Where
+  order     types.Order
   limit     types.Limit
   compare   Value.CompareType
   valuetype Value.Value
@@ -62,7 +63,7 @@ import (
 %token<str> table_name
 %token<str> column_name
 %token<str> index_name
-
+%token<str> ORDER BY
 %type<col> column_def
 %type<cols> column_def_list
 %type<coltype> column_type scalar_type
@@ -94,6 +95,7 @@ import (
 %type<valuetype> Value
 %type<int> int_value
 %type<where> where_opt
+%type<order> orderby_opt
 %type<setexpr> set_opt
 %type<setexprlist> set_opt_list
 %type<valuetypelist>value_list
@@ -510,13 +512,14 @@ delete_stmt:
      yylex.(*lexerWrapper).channelSend <- s
     }
 select_stmt:
-    SELECT sel_field_list FROM table_name_list where_opt limit_opt
+    SELECT sel_field_list FROM table_name_list where_opt orderby_opt limit_opt
     {
       s:=types.SelectStatement{
       	Fields: $2,
       	TableNames: $4,
       	Where: $5,
-      	Limit: $6,
+        OrderBy:$6,
+      	Limit: $7,
       }
      yylex.(*lexerWrapper).channelSend <- s
     }
@@ -535,7 +538,7 @@ sel_field_list:
      }
    }
 
-table_name_list: // TODO  mulitplart where condition, now only one table can be select
+table_name_list: 
     IDENT_ALL  //here we use table_name which is a string type ,not INDENT
     {
       $$ = make([]string, 0, 1)
@@ -554,6 +557,8 @@ where_opt:
     {
       $$=  &types.Where{Expr:$2}
     }
+
+
 expr_opt:
     '(' expr_opt ')'
     {
@@ -657,6 +662,15 @@ limit_opt:
    {
       $$=types.Limit{Offset:$4, Rowcount:$2}
    }
+orderby_opt:
+  {
+  $$=types.Order{}
+  }
+  | ORDER BY IDENT_ALL key_order_opt
+  {
+  $$=types.Order{Col:$3,Direction:$4}
+  }
+
 int_value:
   decimal_value
   {

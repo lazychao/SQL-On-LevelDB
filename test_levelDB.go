@@ -13,6 +13,7 @@ func main() {
 	db, _ := leveldb.OpenFile("data/testdb", nil) //打开一个数据库,不存在就自动创建
 	//这是相对路径
 	defer db.Close()
+	fmt.Printf("%T", db)
 	db.Delete([]byte("t_i_13"), nil)
 	db.Put([]byte("t_i_1"), []byte("value1"), nil)
 	db.Put([]byte("t_i_2"), []byte("value2"), nil)

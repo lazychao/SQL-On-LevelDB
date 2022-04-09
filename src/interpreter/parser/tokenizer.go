@@ -19,35 +19,38 @@ const (
 )
 
 var keywords = map[string]int{
-	"CREATE":   CREATE,
-	"create":   CREATE,
-	"DROP":     DROP,
-	"drop":     DROP,
-	"use":      USE,
-	"USE":      USE,
-	"DATABASE": DATABASE,
-	"database": DATABASE,
-	"TABLE":    TABLE,
-	"table":    TABLE,
-	"INDEX":    INDEX,
-	"index":    INDEX,
-	"PRIMARY":  PRIMARY,
-	"primary":  PRIMARY,
-	"KEY":      KEY,
-	"key":      KEY,
-	"ASC":      ASC,
-	"asc":      ASC,
-	"DESC":     DESC,
-	"desc":     DESC,
-	"IN":       IN,
-	"in":       IN,
-	"NOT":      NOT,
-	"not":      NOT,
-	"AND":      AND,
-	"and":      AND,
-	"or":       OR,
-	"OR":       OR,
-
+	"CREATE":     CREATE,
+	"create":     CREATE,
+	"DROP":       DROP,
+	"drop":       DROP,
+	"use":        USE,
+	"USE":        USE,
+	"DATABASE":   DATABASE,
+	"database":   DATABASE,
+	"TABLE":      TABLE,
+	"table":      TABLE,
+	"INDEX":      INDEX,
+	"index":      INDEX,
+	"PRIMARY":    PRIMARY,
+	"primary":    PRIMARY,
+	"KEY":        KEY,
+	"key":        KEY,
+	"ASC":        ASC,
+	"asc":        ASC,
+	"DESC":       DESC,
+	"desc":       DESC,
+	"IN":         IN,
+	"in":         IN,
+	"NOT":        NOT,
+	"not":        NOT,
+	"AND":        AND,
+	"and":        AND,
+	"or":         OR,
+	"OR":         OR,
+	"ORDER":      ORDER,
+	"BY":         BY,
+	"order":      ORDER,
+	"by":         BY,
 	"STORING":    STORING,
 	"storing":    STORING,
 	"INTERLEAVE": INTERLEAVE,
@@ -154,9 +157,11 @@ func (kt *keywordTokenizer) FromStrLit(lit string, TokenType lexer.Token, lastTo
 	tokVal := 0
 	switch TokenType {
 	case lexer.IDENT:
+		//保留字
 		if v, ok := keywords[lit]; ok {
 			tokVal = v
 		} else {
+			//表名，索引名
 			switch lastToken {
 			case DATABASE:
 				if databaseIdRegexp.MatchString(lit) {
@@ -172,6 +177,7 @@ func (kt *keywordTokenizer) FromStrLit(lit string, TokenType lexer.Token, lastTo
 				}
 			}
 			if tokVal == 0 {
+				//列名
 				if nameAttrRegexp.MatchString(lit) {
 					tokVal = IDENT_LEGAL
 				} else {

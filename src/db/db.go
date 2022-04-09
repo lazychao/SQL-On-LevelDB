@@ -39,7 +39,13 @@ type DbOperation struct {
 	Removeleftcheck bool
 	Addrightcheck   bool
 }
+type DB struct{
+	
+}
+func NewDB{
+	db, _ := leveldb.OpenFile("data/testdb", nil) 
 
+}
 func RunDb(operationChannel <-chan DbOperation, resultChannel chan<- DbResultBatch) {
 	db, _ := leveldb.OpenFile("data/testdb", nil) //打开一个数据库,不存在就自动创建
 	//这是相对路径

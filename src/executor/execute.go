@@ -9,9 +9,9 @@ import (
 	"SQL-On-LevelDB/src/utils/Error"
 	"fmt"
 	"os"
-	"strconv"
 
 	"github.com/jedib0t/go-pretty/v6/table"
+	"github.com/jedib0t/go-pretty/v6/text"
 )
 
 //HandleOneParse 用来处理parse处理完的DStatement类型  dataChannel是接收Statement的通道,整个mysql运行过程中不会关闭，但是quit后就会关闭
@@ -129,17 +129,21 @@ func SelectAPI(statement types.SelectStatement) Error.Error {
 	var rows []value.Row
 	//indexcolumn是要走的索引列
 	if indexcolumn != "" {
-		err, rows = mapping.SelectRecordWithIndex(table, statement.Fields.ColumnNames, statement.Where, indexcolumn)
+		err, rows = mapping.SelectRecordWithIndex(table, statement.Fields.ColumnNames, statement.Where, indexcolumn, statement.OrderBy)
 	} else {
-		err, rows = mapping.SelectRecord(table, statement.Fields.ColumnNames, statement.Where)
+		err, rows = mapping.SelectRecord(table, statement.Fields.ColumnNames, statement.Where, statement.OrderBy)
 	}
 
 	if err != nil {
 		return Error.CreateFailError(err)
 	}
+
 	//limit
 	if statement.Limit.Rowcount != 0 {
-		rows = rows[statement.Limit.Offset : statement.Limit.Offset+statement.Limit.Rowcount]
+		//unsafe ,need to check if the range out of index
+		if statement.Limit.Offset < len(rows) && statement.Limit.Rowcount <= len(rows) {
+			rows = rows[statement.Limit.Offset : statement.Limit.Offset+statement.Limit.Rowcount]
+		}
 	}
 	if statement.Fields.SelectAll {
 		selectcolumn := make([]string, len(table.ColumnsMap))
@@ -158,19 +162,20 @@ func PrintTable(tableName string, columnName []string, records []value.Row) erro
 	t := table.NewWriter()
 	t.SetOutputMirror(os.Stdout)
 	totalHeader := make([]interface{}, 0, len(columnName)+1)
-	totalHeader = append(totalHeader, tableName)
+	//totalHeader = append(totalHeader, tableName)
 	for _, item := range columnName {
 		totalHeader = append(totalHeader, item)
 	}
 	t.SetStyle(table.StyleColoredBright)
+	t.Style().Format.Header = text.FormatDefault
 	t.AppendHeader(totalHeader)
 	columnNum := len(columnName)
 
 	Rows := make([]table.Row, 0, len(records)+1)
 
-	for i, item := range records {
+	for _, item := range records {
 		newRow := make([]interface{}, 0, columnNum+1)
-		newRow = append(newRow, strconv.Itoa(i+1))
+		//	newRow = append(newRow, strconv.Itoa(i+1))
 		for _, col := range item.Values {
 			newRow = append(newRow, col.String())
 			// fmt.Print(col.String() + " ")

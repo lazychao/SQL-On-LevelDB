@@ -221,7 +221,7 @@ type SelectStatement struct {
 	*/
 	TableNames []string
 	Where      *Where //maybe is nil!!!
-	OrderBy    []Order
+	OrderBy    Order
 	Limit      Limit //maybe is nil!!!
 }
 

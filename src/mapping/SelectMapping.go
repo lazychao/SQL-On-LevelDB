@@ -9,6 +9,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"sort"
 
 	"github.com/tinylib/msgp/msgp"
 )
@@ -24,14 +25,14 @@ func SelectGetTableCatalog(tableName string) (*catalog.TableCatalog, error) {
 	_ = msgp.Decode(b, &inst)
 	return &inst, nil
 }
-func SelectRecordWithIndex(table *catalog.TableCatalog, columns []string, where *types.Where, indexcolumn string) (error, []value.Row) {
+func SelectRecordWithIndex(table *catalog.TableCatalog, columns []string, where *types.Where, indexcolumn string, orderby types.Order) (error, []value.Row) {
 	ret := []value.Row{}
 	//构造区间
 	//只会得到一个区间，因为只有AND
 	f, rangee := where.Expr.GetRange(indexcolumn)
 	if !f {
 		fmt.Println("cannot select with index")
-		err, rows := SelectRecord(table, columns, where)
+		err, rows := SelectRecord(table, columns, where, orderby)
 		return err, rows
 	}
 
@@ -113,9 +114,24 @@ func SelectRecordWithIndex(table *catalog.TableCatalog, columns []string, where 
 		tmp, _ := columnFilter(table, decodedRow, columns)
 		ret = append(ret, tmp)
 	}
+	//order
+	if orderby.Col != "" {
+		pos := table.ColumnsMap[orderby.Col].ColumnPos
+		if orderby.Direction == types.Asc {
+			sort.SliceStable(ret, func(i, j int) bool {
+				f, _ := ret[i].Values[pos].Compare(ret[j].Values[pos], value.Less)
+				return f
+			})
+		} else {
+			sort.SliceStable(ret, func(i, j int) bool {
+				f, _ := ret[i].Values[pos].Compare(ret[j].Values[pos], value.Great)
+				return f
+			})
+		}
+	}
 	return nil, ret
 }
-func SelectRecord(table *catalog.TableCatalog, columns []string, where *types.Where) (error, []value.Row) {
+func SelectRecord(table *catalog.TableCatalog, columns []string, where *types.Where, orderby types.Order) (error, []value.Row) {
 	ret := []value.Row{}
 	colPos := getColPos(table, where)
 	//构造前缀
@@ -140,7 +156,21 @@ func SelectRecord(table *catalog.TableCatalog, columns []string, where *types.Wh
 		tmp, _ := columnFilter(table, decodedRow, columns)
 		ret = append(ret, tmp)
 	}
-
+	//order
+	if orderby.Col != "" {
+		pos := table.ColumnsMap[orderby.Col].ColumnPos
+		if orderby.Direction == types.Asc {
+			sort.SliceStable(ret, func(i, j int) bool {
+				f, _ := ret[i].Values[pos].Compare(ret[j].Values[pos], value.Less)
+				return f
+			})
+		} else {
+			sort.SliceStable(ret, func(i, j int) bool {
+				f, _ := ret[i].Values[pos].Compare(ret[j].Values[pos], value.Great)
+				return f
+			})
+		}
+	}
 	return nil, ret
 }
 func columnFilter(table *catalog.TableCatalog, record value.Row, columns []string) (value.Row, error) {
