@@ -2,7 +2,6 @@ package executor
 
 import (
 	"SQL-On-LevelDB/src/check"
-	"SQL-On-LevelDB/src/db"
 	"SQL-On-LevelDB/src/interpreter/types"
 	"SQL-On-LevelDB/src/interpreter/value"
 	"SQL-On-LevelDB/src/mapping"
@@ -10,23 +9,23 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/jedib0t/go-pretty/v6/table"
-	"github.com/jedib0t/go-pretty/v6/text"
+	"github.com/jedib0t/go-pretty/table"
+	"github.com/jedib0t/go-pretty/text"
 )
 
 //HandleOneParse 用来处理parse处理完的DStatement类型  dataChannel是接收Statement的通道,整个mysql运行过程中不会关闭，但是quit后就会关闭
 //stopChannel 用来发送同步信号，每次处理完一个后就发送一个信号用来同步两协程，主协程需要接收到stopChannel的发送后才能继续下一条指令，当dataChannel
 //关闭后，stopChannel才会关闭
-func Execute(dataChannel <-chan types.DStatements, finishChannel chan<- error, operationChannel chan<- db.DbOperation, resultChannel <-chan db.DbResultBatch) {
+func Execute(dataChannel <-chan types.DStatements, finishChannel chan<- error) {
 	var err Error.Error
-	mapping.SetDbChannel(operationChannel, resultChannel)
 	//关闭datachannel才能退出这个函数
 	for statement := range dataChannel {
 		//fmt.Println(statement)
 		switch statement.GetOperationType() {
 
 		case types.CreateTable:
-			err = CreateTableAPI(statement.(types.CreateTableStatement))
+			s := statement.(types.CreateTableStatement)
+			err = CreateTableAPI(&s)
 			if !err.Status {
 				fmt.Println(err.ErrorHint)
 			} else {
@@ -36,7 +35,8 @@ func Execute(dataChannel <-chan types.DStatements, finishChannel chan<- error, o
 			//fmt.Println(err)
 
 		case types.Insert:
-			err = InsertTableAPI(statement.(types.InsertStament))
+			s := statement.(types.InsertStament)
+			err = InsertTableAPI(&s)
 			if !err.Status {
 				fmt.Println(err.ErrorHint)
 			} else {
@@ -45,21 +45,15 @@ func Execute(dataChannel <-chan types.DStatements, finishChannel chan<- error, o
 			}
 
 		case types.Select:
-			err = SelectAPI(statement.(types.SelectStatement))
+			s := statement.(types.SelectStatement)
+			err = SelectAPI(&s)
 			if !err.Status {
 				fmt.Println(err.ErrorHint)
 			}
 
-			// case types.Delete:
-			// 	err = DeleteTableAPI(statement.(types.DeleteStament))
-			// 	if !err.Status {
-			// 		fmt.Println(err.ErrorHint)
-			// 	} else {
-			// 		fmt.Printf("delete succes.\n")
-			// 	}
-			// 	finishChannel<-nil
 		case types.Delete:
-			err = DeleteAPI(statement.(types.DeleteStatement))
+			s := statement.(types.DeleteStatement)
+			err = DeleteAPI(&s)
 			if !err.Status {
 				fmt.Println(err.ErrorHint)
 			} else {
@@ -71,7 +65,7 @@ func Execute(dataChannel <-chan types.DStatements, finishChannel chan<- error, o
 
 }
 
-func InsertTableAPI(statement types.InsertStament) Error.Error {
+func InsertTableAPI(statement *types.InsertStament) Error.Error {
 	//先检查表是否存在，并获取catalog
 
 	tablecatalog, colPos, startBytePos, uniquescolumns, err := check.InsertCheck(statement)
@@ -87,7 +81,7 @@ func InsertTableAPI(statement types.InsertStament) Error.Error {
 }
 
 //CreateTableAPI CM进行检查，index检查 语法检查  之后调用RM中的CreateTable创建表， 之后使用RM中的CreateIndex建索引
-func CreateTableAPI(statement types.CreateTableStatement) Error.Error {
+func CreateTableAPI(statement *types.CreateTableStatement) Error.Error {
 
 	//先检查表
 	tablecatalog, err := check.CreateTableInitAndCheck(statement)
@@ -103,65 +97,58 @@ func CreateTableAPI(statement types.CreateTableStatement) Error.Error {
 }
 
 //delete from table where
-func DeleteAPI(statement types.DeleteStatement) Error.Error {
+func DeleteAPI(statement *types.DeleteStatement) Error.Error {
 	//check
-	err, _, table := check.DeleteCheck(statement)
+	err, indexcolumn, table := check.DeleteCheck(statement)
 	if err != nil {
 		return Error.CreateFailError(err)
 	}
 	//执行delete
-	err, rowNum := mapping.DeleteRecord(table, statement.Where)
-	if err != nil {
-		return Error.CreateFailError(err)
+	var rowNum int
+	if indexcolumn != "" {
+		rowNum = mapping.DeleteRecordWithIndex(table, statement.Where, indexcolumn)
+	} else {
+		rowNum = mapping.DeleteRecord(table, statement.Where)
 	}
+
 	return Error.CreateRowsError(rowNum)
 }
 
 //SELECT sel_field_list FROM table_name_list where_opt limit_opt
-func SelectAPI(statement types.SelectStatement) Error.Error {
+func SelectAPI(statement *types.SelectStatement) Error.Error {
 	//先检查有无语法错误
 	//indexcolumn是要走的索引列
 	err, indexcolumn, table := check.SelectCheck(statement)
 	//err, _, table := check.SelectCheck(statement)
+	//	fmt.Println("ff")
 	if err != nil {
 		return Error.CreateFailError(err)
 	}
-	var rows []value.Row
 	//indexcolumn是要走的索引列
+	rowChannel := make(chan value.Row, 10)
 	if indexcolumn != "" {
-		err, rows = mapping.SelectRecordWithIndex(table, statement.Fields.ColumnNames, statement.Where, indexcolumn, statement.OrderBy)
+		go mapping.SelectRecordWithIndex(table, statement, indexcolumn, rowChannel)
 	} else {
-		err, rows = mapping.SelectRecord(table, statement.Fields.ColumnNames, statement.Where, statement.OrderBy)
+		go mapping.SelectRecord(table, statement, rowChannel)
 	}
 
-	if err != nil {
-		return Error.CreateFailError(err)
-	}
-
-	//limit
-	if statement.Limit.Rowcount != 0 {
-		//unsafe ,need to check if the range out of index
-		if statement.Limit.Offset < len(rows) && statement.Limit.Rowcount <= len(rows) {
-			rows = rows[statement.Limit.Offset : statement.Limit.Offset+statement.Limit.Rowcount]
-		}
-	}
 	if statement.Fields.SelectAll {
 		selectcolumn := make([]string, len(table.ColumnsMap))
 		for name, column := range table.ColumnsMap {
 			//是无序的啊啊啊啊啊
 			selectcolumn[column.ColumnPos] = name
 		}
-		PrintTable(statement.TableNames[0], selectcolumn, rows) //very dirty  but I have no other choose
+		PrintTable(statement.TableNames[0], selectcolumn, rowChannel) //very dirty  but I have no other choose
 	} else {
-		PrintTable(statement.TableNames[0], statement.Fields.ColumnNames, rows)
+		PrintTable(statement.TableNames[0], statement.Fields.ColumnNames, rowChannel)
 	}
 	return Error.CreateSuccessError()
 }
 
-func PrintTable(tableName string, columnName []string, records []value.Row) error {
+func PrintTable(tableName string, columnName []string, rowChannel <-chan value.Row) error {
 	t := table.NewWriter()
 	t.SetOutputMirror(os.Stdout)
-	totalHeader := make([]interface{}, 0, len(columnName)+1)
+	totalHeader := make([]interface{}, 0, len(columnName))
 	//totalHeader = append(totalHeader, tableName)
 	for _, item := range columnName {
 		totalHeader = append(totalHeader, item)
@@ -171,19 +158,22 @@ func PrintTable(tableName string, columnName []string, records []value.Row) erro
 	t.AppendHeader(totalHeader)
 	columnNum := len(columnName)
 
-	Rows := make([]table.Row, 0, len(records)+1)
-
-	for _, item := range records {
-		newRow := make([]interface{}, 0, columnNum+1)
+	var Rows []table.Row
+	tot := 0
+	for item := range rowChannel {
+		newRow := make([]interface{}, 0, columnNum)
 		//	newRow = append(newRow, strconv.Itoa(i+1))
 		for _, col := range item.Values {
 			newRow = append(newRow, col.String())
 			// fmt.Print(col.String() + " ")
 		}
 		Rows = append(Rows, newRow)
+		tot++
 	}
+
 	t.AppendRows(Rows)
-	t.AppendFooter(table.Row{"Total", len(records)})
+	t.AppendFooter(table.Row{"Total", tot})
 	t.Render()
+
 	return nil
 }

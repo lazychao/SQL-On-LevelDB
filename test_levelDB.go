@@ -2,13 +2,7 @@
 // DB's methods may be called concurrently from multiple goroutine.
 package main
 
-import (
-	"fmt"
-
-	"github.com/syndtr/goleveldb/leveldb"
-	"github.com/syndtr/goleveldb/leveldb/util"
-)
-
+/*
 func main() {
 	db, _ := leveldb.OpenFile("data/testdb", nil) //打开一个数据库,不存在就自动创建
 	//这是相对路径
@@ -46,4 +40,4 @@ func main() {
 	// }
 	// iter.Release()
 
-}
+}*/

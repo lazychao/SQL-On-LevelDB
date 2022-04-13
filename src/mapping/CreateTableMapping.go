@@ -9,9 +9,6 @@ import (
 	"github.com/tinylib/msgp/msgp"
 )
 
-var operationChannel chan<- db.DbOperation
-var resultChannel <-chan db.DbResultBatch
-
 //var result db.DbResultBatch
 
 /*
@@ -51,19 +48,19 @@ type TableCatalog struct {
 }
 
 */
-func SetDbChannel(channel1 chan<- db.DbOperation, channel2 <-chan db.DbResultBatch) {
-	operationChannel = channel1
-	resultChannel = channel2
-}
+
 func GetOne(key []byte) []byte {
-	operation := db.DbOperation{DbOperationType: db.GetOne, Key: []byte(key)}
-	operationChannel <- operation
-	result := <-resultChannel
+	operation := db.DbOperation{Key: key}
+	resultchannel := make(chan db.KV, 1) //不能写成无缓冲！！！
+	//fmt.Println("getone")
+	db.DB.GetOne(&operation, resultchannel)
+
+	result := <-resultchannel
 	//fmt.Println(string(result.Value[0]))
-	if result.Cnt == 0 {
+	if len(result.Value) == 0 {
 		return nil
 	} else {
-		return result.Value[0]
+		return result.Value
 	}
 
 }
@@ -84,10 +81,10 @@ func CreateTable(tablecatalog *catalog.TableCatalog) error {
 	// db.Put([]byte(m_key), []byte(m_value), nil)
 	// data, _ := db.Get([]byte(m_key), nil) //data是字节切片
 	//fmt.Println(string(data))
-	operation := db.DbOperation{DbOperationType: db.Put, Key: []byte(m_key), Value: buf.Bytes()}
-	operationChannel <- operation
-	<-resultChannel
-	// result := <-resultChannel
+	operation := db.DbOperation{Key: []byte(m_key), Value: buf.Bytes()}
+	resultchannel := make(chan db.KV, 1)
+	db.DB.Put(&operation, resultchannel)
+	<-resultchannel
 	// //fmt.Println(string(result.Value[0]))
 	// b := bytes.NewBuffer(result.Value[0])
 	// var inst catalog.TableCatalog
@@ -107,9 +104,10 @@ func UpdateTable(tablecatalog *catalog.TableCatalog) error {
 
 	var buf bytes.Buffer
 	_ = msgp.Encode(&buf, tablecatalog)
-	operation := db.DbOperation{DbOperationType: db.Put, Key: []byte(m_key), Value: buf.Bytes()}
-	operationChannel <- operation
-	<-resultChannel
+	operation := db.DbOperation{Key: []byte(m_key), Value: buf.Bytes()}
+	resultchannel := make(chan db.KV, 1)
+	db.DB.Put(&operation, resultchannel)
+	<-resultchannel
 	//fmt.Println(string(result.Value[0]))
 	// b := bytes.NewBuffer(result.Value[0])
 	// var inst catalog.TableCatalog

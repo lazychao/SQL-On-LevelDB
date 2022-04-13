@@ -15,8 +15,8 @@ import (
 	"github.com/peterh/liner"
 )
 
-const firstPrompt = "sql->"
-const secondPrompt = "      ->"
+const firstPrompt = "SQL->"
+const secondPrompt = "   ->"
 
 // func InitDB() error {
 // 	err := CatalogManager.LoadDbMeta()
@@ -89,10 +89,19 @@ func loadHistoryCommand() (*os.File, error) {
 // }
 
 func main() {
+	// trace.Start(os.Stderr)
+	// defer trace.Stop()
+	//runtime.GOMAXPROCS(runtime.NumCPU())                  //发挥并发最大性能
+	StatementChannel := make(chan types.DStatements, 500) //用于传输操作指令通道
+	FinishChannel := make(chan error, 500)                //用于api执行完成反馈通道
+	//初始化LevelDB
+	go db.Init()
+	defer db.Close()
+	//用于传输数据库结果
+	go executor.Execute(StatementChannel, FinishChannel) //begin the runtime for exec
+	//启动命令行
 	ll := liner.NewLiner()
-
 	defer ll.Close()
-
 	ll.SetCtrlCAborts(true)
 	file, err := loadHistoryCommand()
 	if err != nil {
@@ -105,12 +114,6 @@ func main() {
 		//把历史命令文件里的命令都读出来放到命令行app历史里
 		ll.AppendHistory(s.Text())
 	}
-
-	StatementChannel := make(chan types.DStatements, 500) //用于传输操作指令通道
-	FinishChannel := make(chan error, 500)                //用于api执行完成反馈通道
-	OperationChannel := make(chan db.DbOperation, 500)    //用于传输数据库操作
-	DbResultChannel := make(chan db.DbResultBatch, 500)
-
 	defer func() {
 		_, err := ll.WriteHistory(file)
 		if err != nil {
@@ -119,12 +122,8 @@ func main() {
 		_ = file.Close()
 		close(StatementChannel)
 		close(FinishChannel)
-		close(OperationChannel)
 		fmt.Println("bye")
 	}()
-	//用于传输数据库结果
-	go executor.Execute(StatementChannel, FinishChannel, OperationChannel, DbResultChannel) //begin the runtime for exec
-	go db.RunDb(OperationChannel, DbResultChannel)
 	var beginSQLParse = false
 	var sqlText = make([]byte, 0, 100)
 	for { //each sql

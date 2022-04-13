@@ -10,7 +10,7 @@ import (
 )
 
 //CreateTableCheck 用来检查table，并返回所有的应该建的索引
-func CreateTableInitAndCheck(statement types.CreateTableStatement) (*catalog.TableCatalog, error) {
+func CreateTableInitAndCheck(statement *types.CreateTableStatement) (*catalog.TableCatalog, error) {
 	//检查表名是否已经存在
 	// if _, ok := TableName2CatalogMap[statement.TableName]; ok {
 	// 	return errors.New("Table " + statement.TableName + " already exists"), nil
@@ -34,14 +34,14 @@ func CreateTableInitAndCheck(statement types.CreateTableStatement) (*catalog.Tab
 		}
 
 	*/
-	newCatalog := catalog.CreateTableStatement2TableCatalog(&statement)
+	newCatalog := catalog.CreateTableStatement2TableCatalog(statement)
 	err := createTableCheck(newCatalog)
 	if err != nil {
 		return newCatalog, err
 	}
 	return newCatalog, nil
 }
-func InsertCheck(statement types.InsertStament) (*catalog.TableCatalog, []int, []int, []catalog.UniquesColumn, error) {
+func InsertCheck(statement *types.InsertStament) (*catalog.TableCatalog, []int, []int, []catalog.UniquesColumn, error) {
 	var ok bool
 	table, err := mapping.InsertGetTableCatalog(statement.TableName)
 	if err != nil {
@@ -126,7 +126,7 @@ func InsertCheck(statement types.InsertStament) (*catalog.TableCatalog, []int, [
 
 	return table, columnPositions, startBytePos, uniquecolumns, nil
 }
-func SelectCheck(statement types.SelectStatement) (error, string, *catalog.TableCatalog) {
+func SelectCheck(statement *types.SelectStatement) (error, string, *catalog.TableCatalog) {
 	//先检查table在不在，获取其catalog
 	var ok bool
 	table, err := mapping.SelectGetTableCatalog(statement.TableNames[0])
@@ -150,7 +150,8 @@ func SelectCheck(statement types.SelectStatement) (error, string, *catalog.Table
 	return nil, indexcolumn, table
 
 }
-func DeleteCheck(statement types.DeleteStatement) (error, string, *catalog.TableCatalog) {
+
+func DeleteCheck(statement *types.DeleteStatement) (error, string, *catalog.TableCatalog) {
 	//先检查table在不在，获取其catalog
 
 	table, err := mapping.DeleteGetTableCatalog(statement.TableName)

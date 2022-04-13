@@ -16,6 +16,7 @@ import (
 
 func SelectGetTableCatalog(tableName string) (*catalog.TableCatalog, error) {
 	value := GetOne([]byte("m_" + tableName))
+	//fmt.Println("SelectGetTableCatalog")
 	if value == nil {
 		err := errors.New("select table error:this table doesnot exist")
 		return nil, err
@@ -25,15 +26,14 @@ func SelectGetTableCatalog(tableName string) (*catalog.TableCatalog, error) {
 	_ = msgp.Decode(b, &inst)
 	return &inst, nil
 }
-func SelectRecordWithIndex(table *catalog.TableCatalog, columns []string, where *types.Where, indexcolumn string, orderby types.Order) (error, []value.Row) {
-	ret := []value.Row{}
+func SelectRecordWithIndex(table *catalog.TableCatalog, statement *types.SelectStatement, indexcolumn string, rowChannel chan<- value.Row) {
+
 	//构造区间
 	//只会得到一个区间，因为只有AND
-	f, rangee := where.Expr.GetRange(indexcolumn)
+	f, rangee := statement.Where.Expr.GetRange(indexcolumn)
 	if !f {
 		fmt.Println("cannot select with index")
-		err, rows := SelectRecord(table, columns, where, orderby)
-		return err, rows
+		SelectRecord(table, statement, rowChannel)
 	}
 
 	//根据区间，构造index key range
@@ -43,7 +43,8 @@ func SelectRecordWithIndex(table *catalog.TableCatalog, columns []string, where 
 	//因为_的byte是95，依据的是ascii码，96对应的符号是`
 	if rangee == nil {
 		//区间为空,直接返回空结果
-		return nil, ret
+		close(rowChannel)
+		return
 	}
 	// fmt.Println(rangee.Begin.Val.String())
 	// fmt.Println(rangee.Begin.Include)
@@ -82,83 +83,102 @@ func SelectRecordWithIndex(table *catalog.TableCatalog, columns []string, where 
 		endkeybytes = []byte("i_" + table.TableName + "_" + indexcolumn + "`")
 	}
 
-	operation := db.DbOperation{DbOperationType: db.GetIndexWithRange,
+	operation := db.DbOperation{
 		IndexBeginKey: startkeybytes, IndexEndKey: endkeybytes,
 		Removeleftcheck: removeleftcheck, Addrightcheck: addrightcheck}
-	operationChannel <- operation
+	indexKeyChannel := make(chan db.IndexKeyBatch, 1)
+	db.DB.GetIndexWithRange(&operation, indexKeyChannel)
 	//得到结果
-	result := <-resultChannel
-	if result.Cnt == 0 {
-		return nil, ret
+	result := <-indexKeyChannel
+	if len(result) == 0 {
+		close(rowChannel)
+		return
 	}
-	rowids := decodeIndex(result.Key, table, indexcolumn)
+	rowids := decodeIndex(result, table, indexcolumn)
 	rowkeybytes := encodeKey(rowids, table)
-	operation = db.DbOperation{DbOperationType: db.GetBatchValue, KeyBatch: rowkeybytes}
-	operationChannel <- operation
-	//得到结果
-	result = <-resultChannel
-	//得到要进行where比较的列
-	colPos := getColPos(table, where)
-	for _, rowbytes := range result.Value {
-		//fmt.Println(rowbytes)
-		decodedRow := decode([]byte(rowbytes), table) //将行从字节解码回value
 
-		//where筛选
-		if flag, err := checkRow(decodedRow, where, colPos); err != nil || flag == false {
-			if err != nil {
-				return err, nil
-			}
-			continue
-		}
-		//field 筛选
-		tmp, _ := columnFilter(table, decodedRow, columns)
-		ret = append(ret, tmp)
-	}
-	//order
-	if orderby.Col != "" {
-		pos := table.ColumnsMap[orderby.Col].ColumnPos
-		if orderby.Direction == types.Asc {
-			sort.SliceStable(ret, func(i, j int) bool {
-				f, _ := ret[i].Values[pos].Compare(ret[j].Values[pos], value.Less)
-				return f
-			})
-		} else {
-			sort.SliceStable(ret, func(i, j int) bool {
-				f, _ := ret[i].Values[pos].Compare(ret[j].Values[pos], value.Great)
-				return f
-			})
-		}
-	}
-	return nil, ret
+	operation = db.DbOperation{KeyBatch: rowkeybytes}
+	//得到要进行where比较的列
+	resultChannel := make(chan db.KV, 10)
+	go db.DB.GetBatchValue(&operation, resultChannel)
+	//得到结果
+	decodedRowChannel := make(chan value.Row, 10)
+
+	//译码
+	go decodeOp(resultChannel, table, decodedRowChannel) //将行从字节解码回value
+	filterRowChannel := make(chan value.Row, 10)
+	//where筛选
+	go filterOp(decodedRowChannel, filterRowChannel, statement.Where, table)
+	//field 筛选
+	projectedRowChannel := make(chan value.Row, 10)
+	go projectOp(filterRowChannel, projectedRowChannel, table, statement.Fields.ColumnNames)
+	//orderby 排序
+	orderByRowChannel := make(chan value.Row, 10)
+	go orderbyOp(table, statement.OrderBy, projectedRowChannel, orderByRowChannel)
+	//limit
+	go limitOp(statement.Limit, orderByRowChannel, rowChannel)
+	//fmt.Println("syn")
+
 }
-func SelectRecord(table *catalog.TableCatalog, columns []string, where *types.Where, orderby types.Order) (error, []value.Row) {
-	ret := []value.Row{}
-	colPos := getColPos(table, where)
+func SelectRecord(table *catalog.TableCatalog, statement *types.SelectStatement, rowChannel chan<- value.Row) {
+
 	//构造前缀
 	//fmt.Println(table.RecordNo)
 	prefix := "r_" + table.TableName + "_"
-	operation := db.DbOperation{DbOperationType: db.GetBatchValueWithPrefix, Key: []byte(prefix)}
-	operationChannel <- operation
+	operation := db.DbOperation{Key: []byte(prefix)}
+	resultChannel := make(chan db.KV, 10)
+	go db.DB.GetBatchValueWithPrefix(&operation, resultChannel)
 	//得到结果
-	result := <-resultChannel
-	for _, rowbytes := range result.Value {
-		//fmt.Println(rowbytes)
-		decodedRow := decode([]byte(rowbytes), table) //将行从字节解码回value
+	decodedRowChannel := make(chan value.Row, 10)
 
-		//where筛选
-		if flag, err := checkRow(decodedRow, where, colPos); err != nil || flag == false {
-			if err != nil {
-				return err, nil
+	//译码
+	go decodeOp(resultChannel, table, decodedRowChannel) //将行从字节解码回value
+	filterRowChannel := make(chan value.Row, 10)
+	//where筛选
+	go filterOp(decodedRowChannel, filterRowChannel, statement.Where, table)
+	//field 筛选
+	projectedRowChannel := make(chan value.Row, 10)
+	go projectOp(filterRowChannel, projectedRowChannel, table, statement.Fields.ColumnNames)
+	//orderby 排序
+	orderByRowChannel := make(chan value.Row, 10)
+	go orderbyOp(table, statement.OrderBy, projectedRowChannel, orderByRowChannel)
+	//limit
+	go limitOp(statement.Limit, orderByRowChannel, rowChannel)
+	//fmt.Println("syn")
+
+}
+func limitOp(limit types.Limit, orderByRowChannel <-chan value.Row, resultChannel chan<- value.Row) {
+
+	defer close(resultChannel)
+	if limit.Rowcount != 0 {
+		//unsafe ,need to check if the range out of index
+		i := 0
+		for row := range orderByRowChannel {
+			if i >= limit.Offset && i < limit.Offset+limit.Rowcount {
+				resultChannel <- row
+
+			} else if i >= limit.Offset+limit.Rowcount {
+				break
 			}
-			continue
+			i++
 		}
-		//field 筛选
-		tmp, _ := columnFilter(table, decodedRow, columns)
-		ret = append(ret, tmp)
+	} else {
+		for row := range orderByRowChannel {
+			resultChannel <- row
+		}
 	}
-	//order
+
+}
+func orderbyOp(table *catalog.TableCatalog, orderby types.Order, projectedRowChannel <-chan value.Row, orderByRowChannel chan<- value.Row) {
+	defer close(orderByRowChannel)
+	var ret []value.Row
 	if orderby.Col != "" {
+		//order slow the throughput heavily
+		for row := range projectedRowChannel {
+			ret = append(ret, row)
+		}
 		pos := table.ColumnsMap[orderby.Col].ColumnPos
+		//这里是阻塞的，无法流水化
 		if orderby.Direction == types.Asc {
 			sort.SliceStable(ret, func(i, j int) bool {
 				f, _ := ret[i].Values[pos].Compare(ret[j].Values[pos], value.Less)
@@ -170,21 +190,73 @@ func SelectRecord(table *catalog.TableCatalog, columns []string, where *types.Wh
 				return f
 			})
 		}
+		for _, row := range ret {
+			orderByRowChannel <- row
+		}
+	} else {
+		for row := range projectedRowChannel {
+			orderByRowChannel <- row
+		}
 	}
-	return nil, ret
 }
-func columnFilter(table *catalog.TableCatalog, record value.Row, columns []string) (value.Row, error) {
-	if len(columns) == 0 { //如果select* 则使用全部的即可
-		return record, nil
-	}
-	var ret value.Row
+func projectOp(filterRowChannel <-chan value.Row, projectedRowChannel chan<- value.Row, table *catalog.TableCatalog, columns []string) {
+	defer close(projectedRowChannel)
+	//f := 1
+	for record := range filterRowChannel {
+		//beginTime := time.Now()
 
-	for _, column := range columns {
-		ret.Values = append(ret.Values, record.Values[table.ColumnsMap[column].ColumnPos])
-	}
+		if len(columns) == 0 { //如果select* 则使用全部的即可
+			projectedRowChannel <- record
+			// if f == 4 {
+			// 	durationTime := time.Since(beginTime)
+			// 	fmt.Println("project Finish operation at: ", durationTime)
+			// }
+			//f++
 
-	return ret, nil
+			continue
+		}
+		var ret value.Row
+
+		for _, column := range columns {
+			ret.Values = append(ret.Values, record.Values[table.ColumnsMap[column].ColumnPos])
+		}
+		projectedRowChannel <- ret
+	}
 }
+func filterOp(decodedRowChannel <-chan value.Row, filterRowChannel chan<- value.Row, where *types.Where, table *catalog.TableCatalog) {
+	defer close(filterRowChannel)
+	// defer func() {
+	// 	fmt.Print("filter: ")
+	// 	fmt.Println(time.Now().UnixNano())
+	// }()
+
+	if where != nil {
+		//fmt.Println("where")
+		colPos := getColPos(table, where)
+		//f := 1
+		for decodedRow := range decodedRowChannel {
+			//beginTime := time.Now()
+
+			if flag, _ := checkRow(decodedRow, where, colPos); flag == false {
+				continue
+			}
+			//fmt.Println(decodedRow.Values[0].String())
+			filterRowChannel <- decodedRow
+			// if f == 4 {
+			// 	durationTime := time.Since(beginTime)
+			// 	fmt.Println("filter Finish operation at: ", durationTime)
+			// }
+			//f++
+
+		}
+	} else {
+		for decodedRow := range decodedRowChannel {
+			filterRowChannel <- decodedRow
+		}
+	}
+
+}
+
 func checkRow(record value.Row, where *types.Where, colpos []int) (bool, error) {
 	if len(colpos) == 0 {
 		return true, nil
@@ -196,58 +268,73 @@ func checkRow(record value.Row, where *types.Where, colpos []int) (bool, error) 
 	return where.Expr.Evaluate(val)
 
 }
-func decodeIndex(dbResult []db.DbResult, table *catalog.TableCatalog, indexcolumn string) []int {
+func decodeIndex(dbResult db.IndexKeyBatch, table *catalog.TableCatalog, indexcolumn string) []int {
 	var rowIds []int
 	Basekeybytes := []byte("i_" + table.TableName + "_" + indexcolumn + "_")
 
-	for _, item := range dbResult {
-		indexKey := []byte(item)
+	for _, indexKey := range dbResult {
 		rowidbytes := indexKey[len(Basekeybytes)+table.ColumnsMap[indexcolumn].Type.Length:]
 		rowIds = append(rowIds, utils.BytesToInt(rowidbytes))
 	}
 	return rowIds
 }
-func decode(bytes []byte, table *catalog.TableCatalog) value.Row {
+func decodeOp(resultChannel <-chan db.KV, table *catalog.TableCatalog, decodedRowChannel chan<- value.Row) {
+	defer close(decodedRowChannel)
+	// defer func() {
+	// 	fmt.Print("decode: ")
+	// 	fmt.Println(time.Now().UnixNano())
+	// }()
+	//f := 1
+	for kv := range resultChannel {
+		//fmt.Println(kv.Value)
 
-	nullmap := utils.BytesToBools(bytes[0 : len(table.ColumnsMap)/8+1])
-	if nullmap[0] == false {
-		return value.Row{}
-	}
-	record := value.Row{Values: make([]value.Value, len(table.ColumnsMap))}
-	for _, column := range table.ColumnsMap {
-		//这里不用range给的索引是因为，map的迭代是无固定顺序的，这个索引是不可以用的
-		startpos := column.StartBytesPos
-		length := column.Type.Length
-		tag := column.Type.TypeTag
-
-		if !nullmap[column.ColumnPos+1] {
-			tag = catalog.Null
+		bytes := kv.Value
+		nullmap := utils.BytesToBools(bytes[0 : len(table.ColumnsMap)/8+1])
+		if !nullmap[0] {
+			continue
 		}
-		record.Values[column.ColumnPos], _ = value.Byte2Value(bytes[startpos:], tag, length)
-		//fmt.Print(record.Values[column.ColumnPos].String() + " ")
+		record := value.Row{Values: make([]value.Value, len(table.ColumnsMap))}
+		//beginTime := time.Now()
+		for _, column := range table.ColumnsMap {
+			//这里不用range给的索引是因为，map的迭代是无固定顺序的，这个索引是不可以用的
+			startpos := column.StartBytesPos
+			length := column.Type.Length
+			tag := column.Type.TypeTag
+
+			if !nullmap[column.ColumnPos+1] {
+				tag = catalog.Null
+			}
+
+			record.Values[column.ColumnPos], _ = value.Byte2Value(bytes[startpos:], tag, length)
+			//fmt.Print(record.Values[column.ColumnPos].String() + " ")
+		}
+		// if f == 4 {
+		// 	durationTime := time.Since(beginTime)
+		// 	fmt.Println("decode Finish operation at: ", durationTime)
+		// }
+		//fmt.Println(record.Values[0].String())
+		decodedRowChannel <- record
+
+		//f++
+
 	}
-	//fmt.Println(" ")
-	return record
 }
 
 //获取   where -> 每列所在的位置切片
 func getColPos(table *catalog.TableCatalog, where *types.Where) (colPos []int) {
-	if where == nil {
-		colPos = make([]int, 0, 0)
-	} else {
-		cols := where.Expr.GetTargetCols()
-		colPos = make([]int, 0, len(cols))
-		for _, item := range cols {
-			colPos = append(colPos, table.ColumnsMap[item].ColumnPos)
-		}
+	cols := where.Expr.GetTargetCols()
+	colPos = make([]int, 0, len(cols))
+	for _, item := range cols {
+		colPos = append(colPos, table.ColumnsMap[item].ColumnPos)
 	}
-	return
+	return colPos
 }
 func encodeKey(rowids []int, table *catalog.TableCatalog) [][]byte {
 	base := "r_" + table.TableName + "_"
 	basebytes := []byte(base)
 	var rowkeybytes [][]byte
 	for _, rowid := range rowids {
+		fmt.Println(rowid)
 		rowkeybytes = append(rowkeybytes, append(basebytes, utils.IntToBytes(rowid)...))
 	}
 	return rowkeybytes
